@@ -1,10 +1,11 @@
-# MITRE ATT&CK Combined Workbook
+# MITRE ATT&CK Coverage & Alert Heatmap
 
-Combined dashboard:
-- **Analytics Rule Coverage** — lists all rules with MITRE mappings via ARM REST API
-- **Alert Heatmap** — shows MITRE techniques firing from SecurityAlert table via KQL
+Microsoft Sentinel workbook that provides a unified view of your MITRE ATT&CK posture:
 
-Rules and alerts prefixed `[DEV]` are excluded.
+- **Analytics Rule Coverage** — shows all rules that have generated alerts, with their MITRE tactic and technique mappings, severity breakdown, and alert counts
+- **Alert Heatmap** — visualizes which MITRE tactics and techniques are actively firing, with severity distribution and trend analysis over time
+
+Rules and alerts prefixed `[DEV]` are automatically excluded.
 
 ---
 
@@ -17,7 +18,7 @@ Rules and alerts prefixed `[DEV]` are excluded.
     {
       "type": 1,
       "content": {
-        "json": "# MITRE ATT&CK Dashboard\n---\nCombined view of analytics rule coverage and alert heatmap.\nSelect your Sentinel workspace above to load data."
+        "json": "# MITRE ATT&CK Coverage & Alert Heatmap\n---\nAnalytics rule coverage and alert activity mapped to MITRE ATT&CK.\nSelect your Sentinel workspace above to load data."
       },
       "name": "title"
     },
@@ -356,34 +357,6 @@ Rules and alerts prefixed `[DEV]` are excluded.
 
 ---
 
-## What Changed (v3 — full rewrite)
-
-### Coverage section — switched from Azure Resource Graph to ARM REST API
-The previous versions used `queryType: 1` (Azure Resource Graph) with
-`resources | where type == 'microsoft.securityinsights/alertrules'`. This fails because
-**Sentinel alert rules are not indexed in Azure Resource Graph** — they are not in the
-`resources`, `securityresources`, or any other ARG table.
-
-The fix uses the **Azure Resource Manager** data source (`ARMEndpoint/1.0`) which calls
-the Sentinel REST API directly:
-```
-GET {workspace}/providers/Microsoft.SecurityInsights/alertRules?api-version=2023-02-01
-```
-This is the same mechanism Microsoft's built-in Sentinel workbooks use (e.g., Sentinel_Central).
-
-### Heatmap section — fixed query syntax
-- Replaced `parse_json(ExtendedProperties)["Tactics"]` with direct `todynamic(Tactics)` column
-- Used `column_ifexists('Techniques', '')` for safe technique extraction
-- All queries exclude rules/alerts prefixed `[DEV]`
-
-### Parameters — added workspace picker
-Since the ARM API needs a specific workspace path, the workbook now includes Subscription
-and Workspace pickers. KQL queries use `crossComponentResources: ["{Workspace}"]` to target
-the selected workspace.
-
----
-
 ## Permissions Required
 
-- **Coverage section:** Microsoft Sentinel Reader on the workspace (for ARM API)
-- **Heatmap section:** Microsoft Sentinel Reader on the workspace (for SecurityAlert table)
+Microsoft Sentinel Reader (or higher) on the workspace.
