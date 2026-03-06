@@ -100,9 +100,69 @@ Rules and alerts prefixed `[DEV]` are automatically excluded.
     {
       "type": 1,
       "content": {
-        "json": "---\n## Analytics Rule Coverage\nEnabled analytics rules with MITRE ATT&CK mappings (via Sentinel REST API). Use the grid filter bar to exclude `[DEV]` rules."
+        "json": "---\n## Analytics Rule Coverage\nEnabled analytics rules with MITRE ATT&CK mappings. Use the grid filter bar to exclude `[DEV]` rules."
       },
       "name": "coverage-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = SecurityAlert | where TimeGenerated > ago(90d) | where AlertName !startswith '[DEV]' | where isnotempty(Tactics);\nlet allTactics = data | extend T = todynamic(Tactics) | mv-expand T | extend T = tostring(T) | where isnotempty(T);\nlet allTechs = data | extend TL = column_ifexists('Techniques', '') | where isnotempty(TL) | extend TA = todynamic(TL) | mv-expand TA | extend TA = tostring(TA) | where isnotempty(TA);\nunion\n(data | summarize v = dcount(AlertName) | extend Metric = 'Total Rules', Order = 1),\n(allTactics | summarize v = dcount(T) | extend Metric = 'Tactics Covered', Order = 2),\n(allTechs | summarize v = dcount(TA) | extend Metric = 'Techniques Covered', Order = 3),\n(data | where AlertSeverity == 'High' | summarize v = dcount(AlertName) | extend Metric = 'High', Order = 4),\n(data | where AlertSeverity == 'Medium' | summarize v = dcount(AlertName) | extend Metric = 'Medium', Order = 5),\n(data | where AlertSeverity == 'Low' | summarize v = dcount(AlertName) | extend Metric = 'Low', Order = 6),\n(data | where AlertSeverity == 'Informational' | summarize v = dcount(AlertName) | extend Metric = 'Informational', Order = 7)\n| project Metric, Count = v, Order\n| order by Order asc",
+        "size": 4,
+        "title": "Coverage Summary (last 90 days)",
+        "noDataMessage": "No alert data found.",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [ "{Workspace}" ],
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": { "columnMatch": "Metric", "formatter": 1 },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": { "palette": "auto" },
+            "numberFormat": { "unit": 17, "options": { "maximumSignificantDigits": 3 } }
+          },
+          "showBorder": true,
+          "colorSettings": {
+            "colorConditions": [
+              { "operator": "==", "value": "High", "color": "#D13438" },
+              { "operator": "==", "value": "Medium", "color": "#F7630C" },
+              { "operator": "==", "value": "Low", "color": "#0078D4" },
+              { "operator": "==", "value": "Informational", "color": "#5C5C5C" },
+              { "operator": "Default", "color": "#004578" }
+            ],
+            "rowColoring": "Metric"
+          }
+        }
+      },
+      "name": "coverage-summary"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityAlert\n| where TimeGenerated > ago(90d)\n| where AlertName !startswith '[DEV]'\n| where '*' in ({Severity}) or AlertSeverity in ({Severity})\n| where isnotempty(Tactics)\n| extend TacticArray = todynamic(Tactics)\n| mv-expand Tactic = TacticArray\n| extend Tactic = tostring(Tactic)\n| where isnotempty(Tactic)\n| summarize DistinctRules = dcount(AlertName) by Tactic\n| order by DistinctRules desc",
+        "size": 3,
+        "title": "Active Rule Coverage by Tactic (last 90 days)",
+        "noDataMessage": "No alerts with MITRE tactics found in the last 90 days.",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [ "{Workspace}" ],
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": { "columnMatch": "Tactic", "formatter": 1 },
+          "leftContent": {
+            "columnMatch": "DistinctRules",
+            "formatter": 12,
+            "formatOptions": { "palette": "yellowOrangeRed" },
+            "numberFormat": { "unit": 17, "options": { "maximumSignificantDigits": 3 } }
+          },
+          "showBorder": true
+        }
+      },
+      "name": "active-coverage-tiles"
     },
     {
       "type": 3,
@@ -169,66 +229,6 @@ Rules and alerts prefixed `[DEV]` are automatically excluded.
         }
       },
       "name": "rules-table"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "let data = SecurityAlert | where TimeGenerated > ago(90d) | where AlertName !startswith '[DEV]' | where isnotempty(Tactics);\nlet allTactics = data | extend T = todynamic(Tactics) | mv-expand T | extend T = tostring(T) | where isnotempty(T);\nlet allTechs = data | extend TL = column_ifexists('Techniques', '') | where isnotempty(TL) | extend TA = todynamic(TL) | mv-expand TA | extend TA = tostring(TA) | where isnotempty(TA);\nunion\n(data | summarize v = dcount(AlertName) | extend Metric = 'Total Rules', Order = 1),\n(allTactics | summarize v = dcount(T) | extend Metric = 'Tactics Covered', Order = 2),\n(allTechs | summarize v = dcount(TA) | extend Metric = 'Techniques Covered', Order = 3),\n(data | where AlertSeverity == 'High' | summarize v = dcount(AlertName) | extend Metric = 'High', Order = 4),\n(data | where AlertSeverity == 'Medium' | summarize v = dcount(AlertName) | extend Metric = 'Medium', Order = 5),\n(data | where AlertSeverity == 'Low' | summarize v = dcount(AlertName) | extend Metric = 'Low', Order = 6),\n(data | where AlertSeverity == 'Informational' | summarize v = dcount(AlertName) | extend Metric = 'Informational', Order = 7)\n| project Metric, Count = v, Order\n| order by Order asc",
-        "size": 4,
-        "title": "Coverage Summary (last 90 days)",
-        "noDataMessage": "No alert data found.",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "crossComponentResources": [ "{Workspace}" ],
-        "visualization": "tiles",
-        "tileSettings": {
-          "titleContent": { "columnMatch": "Metric", "formatter": 1 },
-          "leftContent": {
-            "columnMatch": "Count",
-            "formatter": 12,
-            "formatOptions": { "palette": "auto" },
-            "numberFormat": { "unit": 17, "options": { "maximumSignificantDigits": 3 } }
-          },
-          "showBorder": true,
-          "colorSettings": {
-            "colorConditions": [
-              { "operator": "==", "value": "High", "color": "#D13438" },
-              { "operator": "==", "value": "Medium", "color": "#F7630C" },
-              { "operator": "==", "value": "Low", "color": "#0078D4" },
-              { "operator": "==", "value": "Informational", "color": "#5C5C5C" },
-              { "operator": "Default", "color": "#004578" }
-            ],
-            "rowColoring": "Metric"
-          }
-        }
-      },
-      "name": "coverage-summary"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "SecurityAlert\n| where TimeGenerated > ago(90d)\n| where AlertName !startswith '[DEV]'\n| where '*' in ({Severity}) or AlertSeverity in ({Severity})\n| where isnotempty(Tactics)\n| extend TacticArray = todynamic(Tactics)\n| mv-expand Tactic = TacticArray\n| extend Tactic = tostring(Tactic)\n| where isnotempty(Tactic)\n| summarize DistinctRules = dcount(AlertName) by Tactic\n| order by DistinctRules desc",
-        "size": 3,
-        "title": "Active Rule Coverage by Tactic (last 90 days)",
-        "noDataMessage": "No alerts with MITRE tactics found in the last 90 days.",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "crossComponentResources": [ "{Workspace}" ],
-        "visualization": "tiles",
-        "tileSettings": {
-          "titleContent": { "columnMatch": "Tactic", "formatter": 1 },
-          "leftContent": {
-            "columnMatch": "DistinctRules",
-            "formatter": 12,
-            "formatOptions": { "palette": "yellowOrangeRed" },
-            "numberFormat": { "unit": 17, "options": { "maximumSignificantDigits": 3 } }
-          },
-          "showBorder": true
-        }
-      },
-      "name": "active-coverage-tiles"
     },
     {
       "type": 1,
