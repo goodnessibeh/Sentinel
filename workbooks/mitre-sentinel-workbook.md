@@ -108,41 +108,6 @@ Rules and alerts prefixed `[DEV]` are automatically excluded.
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let data = SecurityAlert | where TimeGenerated > ago(90d) | where AlertName !startswith '[DEV]' | where isnotempty(Tactics);\nlet allTactics = data | extend T = todynamic(Tactics) | mv-expand T | extend T = tostring(T) | where isnotempty(T);\nlet allTechs = data | extend TL = column_ifexists('Techniques', '') | where isnotempty(TL) | extend TA = todynamic(TL) | mv-expand TA | extend TA = tostring(TA) | where isnotempty(TA);\nunion\n(data | summarize v = dcount(AlertName) | extend Metric = 'Total Rules', Order = 1),\n(allTactics | summarize v = dcount(T) | extend Metric = 'Tactics Covered', Order = 2),\n(allTechs | summarize v = dcount(TA) | extend Metric = 'Techniques Covered', Order = 3),\n(data | where AlertSeverity == 'High' | summarize v = dcount(AlertName) | extend Metric = 'High', Order = 4),\n(data | where AlertSeverity == 'Medium' | summarize v = dcount(AlertName) | extend Metric = 'Medium', Order = 5),\n(data | where AlertSeverity == 'Low' | summarize v = dcount(AlertName) | extend Metric = 'Low', Order = 6),\n(data | where AlertSeverity == 'Informational' | summarize v = dcount(AlertName) | extend Metric = 'Informational', Order = 7)\n| project Metric, Count = v, Order\n| order by Order asc",
-        "size": 4,
-        "title": "Coverage Summary (last 90 days)",
-        "noDataMessage": "No alert data found.",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces",
-        "crossComponentResources": [ "{Workspace}" ],
-        "visualization": "tiles",
-        "tileSettings": {
-          "titleContent": { "columnMatch": "Metric", "formatter": 1 },
-          "leftContent": {
-            "columnMatch": "Count",
-            "formatter": 12,
-            "formatOptions": { "palette": "auto" },
-            "numberFormat": { "unit": 17, "options": { "maximumSignificantDigits": 3 } }
-          },
-          "showBorder": true,
-          "colorSettings": {
-            "colorConditions": [
-              { "operator": "==", "value": "High", "color": "#D13438" },
-              { "operator": "==", "value": "Medium", "color": "#F7630C" },
-              { "operator": "==", "value": "Low", "color": "#0078D4" },
-              { "operator": "==", "value": "Informational", "color": "#5C5C5C" },
-              { "operator": "Default", "color": "#004578" }
-            ],
-            "rowColoring": "Metric"
-          }
-        }
-      },
-      "name": "coverage-summary"
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
         "query": "SecurityAlert\n| where TimeGenerated > ago(90d)\n| where AlertName !startswith '[DEV]'\n| where isnotempty(Tactics)\n| summarize Severity = take_any(AlertSeverity), TacticsRaw = take_any(Tactics), TechniquesRaw = take_any(column_ifexists('Techniques', '')), AlertCount = count(), LastFired = max(TimeGenerated) by RuleName = AlertName\n| extend TacticArray = todynamic(TacticsRaw)\n| extend TechArray = iff(isnotempty(TechniquesRaw), todynamic(TechniquesRaw), dynamic([]))\n| extend Tactics = strcat_array(TacticArray, ' | ')\n| extend Techniques = iff(array_length(TechArray) > 0, strcat_array(TechArray, ' | '), '')\n| project RuleName, Severity, Tactics, Techniques, AlertCount, LastFired\n| order by Severity asc, RuleName asc",
         "size": 0,
         "title": "Analytics Rules with MITRE Mappings",
@@ -204,6 +169,41 @@ Rules and alerts prefixed `[DEV]` are automatically excluded.
         }
       },
       "name": "rules-table"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let data = SecurityAlert | where TimeGenerated > ago(90d) | where AlertName !startswith '[DEV]' | where isnotempty(Tactics);\nlet allTactics = data | extend T = todynamic(Tactics) | mv-expand T | extend T = tostring(T) | where isnotempty(T);\nlet allTechs = data | extend TL = column_ifexists('Techniques', '') | where isnotempty(TL) | extend TA = todynamic(TL) | mv-expand TA | extend TA = tostring(TA) | where isnotempty(TA);\nunion\n(data | summarize v = dcount(AlertName) | extend Metric = 'Total Rules', Order = 1),\n(allTactics | summarize v = dcount(T) | extend Metric = 'Tactics Covered', Order = 2),\n(allTechs | summarize v = dcount(TA) | extend Metric = 'Techniques Covered', Order = 3),\n(data | where AlertSeverity == 'High' | summarize v = dcount(AlertName) | extend Metric = 'High', Order = 4),\n(data | where AlertSeverity == 'Medium' | summarize v = dcount(AlertName) | extend Metric = 'Medium', Order = 5),\n(data | where AlertSeverity == 'Low' | summarize v = dcount(AlertName) | extend Metric = 'Low', Order = 6),\n(data | where AlertSeverity == 'Informational' | summarize v = dcount(AlertName) | extend Metric = 'Informational', Order = 7)\n| project Metric, Count = v, Order\n| order by Order asc",
+        "size": 4,
+        "title": "Coverage Summary (last 90 days)",
+        "noDataMessage": "No alert data found.",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [ "{Workspace}" ],
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": { "columnMatch": "Metric", "formatter": 1 },
+          "leftContent": {
+            "columnMatch": "Count",
+            "formatter": 12,
+            "formatOptions": { "palette": "auto" },
+            "numberFormat": { "unit": 17, "options": { "maximumSignificantDigits": 3 } }
+          },
+          "showBorder": true,
+          "colorSettings": {
+            "colorConditions": [
+              { "operator": "==", "value": "High", "color": "#D13438" },
+              { "operator": "==", "value": "Medium", "color": "#F7630C" },
+              { "operator": "==", "value": "Low", "color": "#0078D4" },
+              { "operator": "==", "value": "Informational", "color": "#5C5C5C" },
+              { "operator": "Default", "color": "#004578" }
+            ],
+            "rowColoring": "Metric"
+          }
+        }
+      },
+      "name": "coverage-summary"
     },
     {
       "type": 3,
