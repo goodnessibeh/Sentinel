@@ -1,0 +1,52 @@
+id: 742fc14c-3abc-437d-95ee-f9473281ea80
+name: Configuration Change Detected
+description: |
+  Detects any configuration change event on FortiGate devices. Every configuration change should be tracked for audit purposes, and unexpected changes — especially outside maintenance windows or by unfamiliar admin accounts — can indicate an attacker who has gained admin access and is modifying security policies to facilitate their attack. Configuration change monitoring is also a compliance requirement under most security frameworks.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: Unauthorized configuration changes can silently disable security controls, open backdoor access, or weaken policies, making change tracking essential for both security and compliance.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - DefenseEvasion
+relevantTechniques:
+  - T1562
+query: |
+  let lookback = 24h;
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for system-level log entries
+  | where Activity has "system"
+  // Key filter: FortiGate event ID for configuration changes
+  | where DeviceEventClassID in ("32102", "0100032102")
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DeviceName
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: DestinationUserName
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

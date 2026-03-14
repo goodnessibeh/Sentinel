@@ -1,0 +1,59 @@
+id: 114abb83-553d-40de-95e4-d4caccd168cf
+name: Concurrent VPN Sessions from Same User
+description: |
+  Detects a single user account connected to the SSL VPN from multiple distinct source IP addresses simultaneously. Under normal circumstances, a user connects from one location at a time. Multiple concurrent sessions from different IPs suggest that the user's credentials have been compromised and are being used by an attacker at the same time as the legitimate user, or the credentials have been shared or sold.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: Concurrent VPN sessions from different IPs for the same user is a high-confidence indicator of credential compromise, as legitimate users rarely connect from multiple locations simultaneously.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1078
+query: |
+  let lookback = 1h;
+  CommonSecurityLog
+  // Filter to the last 1 hour of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for VPN-related log entries
+  | where Activity has "vpn"
+  // Key filter: only look at successful VPN tunnel establishments
+  | where DeviceAction == "tunnel-up"
+  // Extract tunnel type to focus on SSL VPN connections
+  | extend TunnelType = extract("FTNTFGTtunneltype=([^;\\s]+)", 1, AdditionalExtensions)
+  | where TunnelType has "ssl"
+  // Aggregate sessions per user — count distinct source IPs and countries
+  | summarize
+      SessionCount = count(),
+      DistinctIPs = dcount(SourceIP),
+      IPList = make_set(SourceIP, 10),
+      Countries = make_set(extract("FTNTFGTsrccountry=([^;\\s]+)", 1, AdditionalExtensions), 5)
+    by DestinationUserName
+  // Detection logic: flag users with sessions from more than one distinct IP
+  | where DistinctIPs > 1
+  | project DestinationUserName, SessionCount, DistinctIPs, IPList, Countries
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: DestinationUserName
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

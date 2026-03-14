@@ -1,0 +1,44 @@
+id: c0eff2cd-fcef-45ec-972f-06e6c74804ee
+name: Configuration Saved or Loaded
+description: |
+  **Description:** Detects when a switch configuration is saved to persistent storage or when a new configuration file is loaded. Configuration saves typically follow administrative changes, while configuration loads may indicate a device restore, firmware upgrade, or an attacker loading a modified configuration to establish persistence or alter security settings.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should correlate configuration save/load events with authorized change windows to detect unauthorized configuration modifications.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1565
+query: |
+  // Lookback: 24 hours for configuration save/load events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match configuration save, use, and file operation events
+  | where SyslogMessage has_any ("cm.SaveCfg", "cm.UseCfg", "cm.fileOps")
+  // Parse severity and component from the EMS message
+  | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

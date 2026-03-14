@@ -1,0 +1,42 @@
+id: db556790-93e7-4ac7-a5bd-a914ed04156a
+name: CDP Neighbor Timeout
+description: |
+  **Description:** Detects when a CDP (Cisco Discovery Protocol) neighbor times out on the switch. In mixed-vendor environments, CDP timeouts indicate that a previously connected Cisco device is no longer reachable. This may indicate link failure, device failure, or physical disconnection. While CDP is primarily a Cisco protocol, Extreme switches can receive and process CDP frames.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should monitor CDP timeouts in multi-vendor environments to detect device disappearances that may indicate infrastructure issues or unauthorized disconnections.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1200
+query: |
+  // Lookback: 24 hours for CDP timeout events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match CDP neighbor timeout events
+  | where SyslogMessage has "CDP.Timeout"
+  | project TimeGenerated, HostName, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

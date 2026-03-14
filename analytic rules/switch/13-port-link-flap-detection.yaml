@@ -1,0 +1,45 @@
+id: 2450dc7c-52a8-439b-a6c4-31153baf8ac7
+name: Port Link Flap Detection
+description: |
+  **Description:** Detects when the switch's built-in link flap detection mechanism triggers, indicating that a port is rapidly transitioning between up and down states. Link flapping can be caused by a faulty cable, a failing NIC, an overloaded switch port, or a deliberate attempt to destabilize the network. The switch may automatically disable the flapping port to protect network stability.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate link flaps because persistent flapping on a port can cause widespread disruption across the VLAN and may indicate physical tampering or hardware failure.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  // Lookback: 24 hours for link flap log events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match the port link flap action log event
+  | where SyslogMessage has "PortLinkFlapActLogEvent"
+  // Extract the affected port and its flap status
+  | extend Port = extract(@"Port\s+(\S+)", 1, SyslogMessage)
+  | extend FlapStatus = extract(@"status is (\w+)", 1, SyslogMessage)
+  | project TimeGenerated, HostName, Port, FlapStatus, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

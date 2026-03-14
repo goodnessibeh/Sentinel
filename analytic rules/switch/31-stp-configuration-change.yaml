@@ -1,0 +1,60 @@
+id: ed0cce5f-389d-49dd-a0eb-72e9d6da63a4
+name: STP Configuration Change
+description: |
+  **Description:** Detects when STP configuration is modified, including changes to bridge priority, BPDU guard settings, root guard, or enabling/disabling STP entirely. STP configuration changes are high-risk because they directly affect the Layer 2 forwarding topology. An attacker may lower the bridge priority to become the root bridge, disable BPDU guard to allow their injected BPDUs, or disable STP entirely to create loops.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate STP configuration changes immediately because they can be precursors to STP manipulation attacks or may indicate an attacker weakening Layer 2 security controls.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - DefenseEvasion
+relevantTechniques:
+  - T1562.001
+query: |
+  // Lookback: 24 hours for STP configuration changes
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // First filter: match CLI command log events
+  | where SyslogMessage has_any ("CLI.logRemoteCmd", "CLI.logLocalCmd", "cm.CLILog")
+  // Key filter: match STP-related configuration commands
+  | where SyslogMessage has_any (
+      "stpd", "spanning-tree", "stp",
+      "configure stpd", "enable stpd", "disable stpd",
+      "bpdu-guard", "bpdu-restrict", "bpdu-filter",
+      "loop-protect", "edge-safeguard",
+      "priority", "root-guard",
+      "create stpd", "delete stpd"
+    )
+  // Classify the action type for quick triage
+  | extend Action = case(
+      SyslogMessage has "disable", "DISABLED",
+      SyslogMessage has "enable", "ENABLED",
+      SyslogMessage has "configure", "MODIFIED",
+      SyslogMessage has "delete", "DELETED",
+      SyslogMessage has "create", "CREATED",
+      "CHANGED"
+    )
+  | project TimeGenerated, HostName, Action, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

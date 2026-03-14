@@ -1,0 +1,49 @@
+id: 6b4df2e3-5743-45ec-9fd8-69bb19290899
+name: LLDP Neighbor Disappeared — Link Loss
+description: |
+  **Description:** Detects when an LLDP (Link Layer Discovery Protocol) neighbor is removed from the switch's neighbor table, indicating that a previously connected device is no longer reachable. LLDP neighbor disappearances can indicate a physical link failure, a device being powered off or rebooted, or a cable being disconnected. Multiple simultaneous disappearances may indicate a larger infrastructure failure.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate LLDP neighbor disappearances because they may indicate physical tampering, unauthorized device removal, or infrastructure failures that affect network connectivity.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1200
+query: |
+  // Lookback: 24 hours for LLDP neighbor removal events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match LLDP neighbor removal events
+  | where SyslogMessage has "LLDP.NbrRemove"
+  // Extract the port where the neighbor was lost
+  | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
+  | project TimeGenerated, HostName, Port, SyslogMessage
+  // Aggregate lost neighbors per switch in 30-minute bins to detect mass losses
+  | summarize
+      LostNeighbors = count(),
+      AffectedPorts = make_set(Port, 20)
+    by HostName, bin(TimeGenerated, 30m)
+  | order by LostNeighbors desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

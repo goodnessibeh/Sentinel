@@ -1,0 +1,49 @@
+id: bc069bcf-0a95-4cca-ae0f-701dabadbbd6
+name: Account Enumeration via LDAP
+description: |
+  This detection identifies accounts performing an unusually high volume of LDAP queries against the directory, which indicates account enumeration and Active Directory reconnaissance. Attackers use LDAP queries to map out user accounts, group memberships, and organizational structure to identify high-value targets for lateral movement. While LDAP queries are normal in AD environments, the volume and pattern of queries differentiate legitimate tools from attacker reconnaissance.
+  
+  Importance: A SOC analyst should investigate because high-volume LDAP enumeration indicates an attacker is mapping the Active Directory environment to identify targets for privilege escalation and lateral movement.
+severity: Low
+status: Available
+requiredDataConnectors:
+  - connectorId: AzureAdvancedThreatProtection
+    dataTypes:
+      - IdentityQueryEvents
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Discovery
+relevantTechniques:
+  - T1087.002
+query: |
+  IdentityQueryEvents
+  // 24-hour lookback for LDAP query activity
+  | where TimeGenerated > ago(24h)
+  // Filter for LDAP query type
+  | where QueryType == "LDAP"
+  | where ActionType == "LDAP query"
+  // Aggregate: count total and distinct queries per user and device
+  | summarize
+      QueryCount = count(),
+      DistinctQueries = dcount(QueryTarget),
+      Queries = make_set(QueryTarget, 20)
+    by AccountUpn, DeviceName
+  // Threshold: flag accounts with abnormally high query volumes
+  | where QueryCount > 50
+  | project AccountUpn, DeviceName, QueryCount, DistinctQueries, Queries
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountUpn
+  - entityType: Host
+    fieldMappings:
+      - identifier: FullName
+        columnName: DeviceName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

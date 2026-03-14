@@ -1,0 +1,48 @@
+id: 2be6e7d9-f2d2-4e03-a204-ef93ca8eb298
+name: WMI Remote Execution
+description: |
+  This detection identifies processes spawned by the WMI Provider Host (wmiprvse.exe), which indicates remote code execution via Windows Management Instrumentation. WMI is a powerful administration framework that attackers frequently abuse for lateral movement and remote execution because it leaves minimal forensic artifacts. The query filters out normal WMI child processes to surface suspicious activity.
+  
+  Importance: A SOC analyst should investigate because WMI-based remote execution is a hallmark of advanced adversaries and is commonly used in hands-on-keyboard lateral movement.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: MicrosoftThreatProtection
+    dataTypes:
+      - DeviceProcessEvents
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Execution
+relevantTechniques:
+  - T1047
+query: |
+  DeviceProcessEvents
+  // 24-hour lookback for WMI-spawned processes
+  | where TimeGenerated > ago(24h)
+  // Key filter: process was spawned by the WMI provider host
+  | where InitiatingProcessFileName =~ "wmiprvse.exe"
+  // Exclude normal WMI child processes to reduce noise
+  | where FileName !in~ ("wmiprvse.exe", "wmiapsrv.exe", "scrcons.exe")
+  | project TimeGenerated, DeviceName, AccountName, FileName,
+            ProcessCommandLine, InitiatingProcessCommandLine
+  // Aggregate to show the volume and variety of WMI-spawned processes
+  | summarize
+      ProcessCount = count(),
+      ProcessList = make_set(strcat(FileName, " → ", ProcessCommandLine), 10)
+    by DeviceName, AccountName, bin(TimeGenerated, 1h)
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: FullName
+        columnName: DeviceName
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

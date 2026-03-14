@@ -1,0 +1,59 @@
+id: 2c2ac592-63c9-4db7-afc7-ba440c4e8075
+name: Successful Login from Unexpected Source
+description: |
+  **Description:** Detects successful authentication to the switch management interface from IP addresses outside the defined management network subnets. Legitimate switch administration should only originate from designated management networks. A successful login from an unexpected source may indicate credential theft, a compromised jump host, or an attacker who has gained valid credentials through phishing or other means.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate unexpected source logins urgently because they indicate an attacker with valid credentials accessing network infrastructure from an unauthorized location.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1078
+query: |
+  // Lookback: 24 hours for successful authentication events
+  let lookback = 24h;
+  // Define allowed management subnets — customize for your environment
+  let AllowedMgmtSubnets = dynamic(["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]);
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match successful authentication events
+  | where SyslogMessage has "AAA.authPass"
+  // Extract user, authentication method, and source IP
+  | extend User = extract(@"user\s+(\S+)", 1, SyslogMessage)
+  | extend Method = extract(@"through\s+(\S+)", 1, SyslogMessage)
+  | extend SourceIP = extract(@"from\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
+  // Only evaluate events with a parseable source IP
+  | where isnotempty(SourceIP)
+  // Detection logic: flag logins from IPs NOT in approved management subnets
+  | where not(ipv4_is_in_any_range(SourceIP, AllowedMgmtSubnets))
+  | project TimeGenerated, HostName, User, Method, SourceIP, SyslogMessage
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: User
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

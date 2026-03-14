@@ -1,0 +1,46 @@
+id: 7c851ab4-56e5-4ad5-8281-ccd85b74d2de
+name: ACL/Policy Configuration Change
+description: |
+  **Description:** Detects when Access Control Lists (ACLs) or policies are created, modified, bound, or unbound on the switch. ACLs are the primary mechanism for enforcing traffic filtering and segmentation at Layer 2/3. Unauthorized ACL changes can open previously blocked pathways, disable traffic filtering, or redirect traffic. An attacker may modify ACLs to permit their traffic or remove restrictions that block lateral movement.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate ACL changes because unauthorized modifications can silently open network pathways that were previously secured.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - DefenseEvasion
+relevantTechniques:
+  - T1562.001
+query: |
+  // Lookback: 24 hours for ACL/policy configuration changes
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match ACL system events or CLI commands that modify ACLs/policies
+  | where SyslogMessage has_any ("ACL.bind", "ACL.unBind", "ACL.Change", "ACL.DynACL", "ACL.refresh")
+      or (SyslogMessage has_any ("CLI.logRemoteCmd", "CLI.logLocalCmd")
+          and SyslogMessage has_any ("acl", "policy", "access-list", "configure access-list"))
+  // Parse severity and component from the EMS message
+  | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

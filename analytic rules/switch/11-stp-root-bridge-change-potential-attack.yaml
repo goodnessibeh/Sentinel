@@ -1,0 +1,43 @@
+id: e606bbfe-1600-4d96-9d01-579ef9f33e31
+name: STP Root Bridge Change — Potential Attack
+description: |
+  **Description:** Detects when the root bridge for a Spanning Tree domain changes. The root bridge is the central node that determines the entire Layer 2 forwarding topology. An attacker can inject BPDUs with a lower bridge priority to force themselves to become the root bridge, enabling them to intercept all traffic traversing the spanning tree. This is one of the most dangerous Layer 2 attacks.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts must investigate root bridge changes immediately because an unauthorized root bridge change gives an attacker the ability to see and manipulate all switched traffic in the affected domain.
+severity: Critical
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1557
+query: |
+  // Lookback: 24 hours for root bridge change events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match STP root change events or related root keywords
+  | where SyslogMessage has "STP.State.RootChg"
+      or (SyslogMessage has "STP" and SyslogMessage has_any ("Root", "root bridge", "root change"))
+  | project TimeGenerated, HostName, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

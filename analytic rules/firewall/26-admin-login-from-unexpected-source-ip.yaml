@@ -1,0 +1,55 @@
+id: fbb37f51-d3cb-4250-a935-44313c0f786d
+name: Admin Login from Unexpected Source IP
+description: |
+  Detects successful administrative logins to FortiGate management interfaces from IP addresses outside the expected management network ranges. Admin access should be restricted to specific management subnets or jump hosts. A successful admin login from an unexpected IP could indicate a compromised credential being used from an attacker-controlled host, or a misconfigured access policy that exposes the management plane.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: Admin logins from outside trusted management networks may indicate credential theft or unauthorized access that could lead to complete security control takeover.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1078
+query: |
+  let lookback = 24h;
+  // Define trusted management network ranges — replace with your actual CIDRs
+  let AllowedAdminSubnets = dynamic(["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]);
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for system-level log entries (admin events)
+  | where Activity has "system"
+  // Key filter: FortiGate event ID for successful admin login
+  | where DeviceEventClassID in ("32001", "0100032001")
+  // Admin login success from outside expected management network ranges
+  | where not(ipv4_is_in_any_range(SourceIP, AllowedAdminSubnets))
+  | project TimeGenerated, SourceIP, DestinationUserName, DeviceName, Message
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DeviceName
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: DestinationUserName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

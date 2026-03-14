@@ -1,0 +1,57 @@
+id: eebca83c-a216-4cad-897e-cfa5b00b7a81
+name: VLAN Configuration Change
+description: |
+  **Description:** Detects when VLANs are created, deleted, or modified on the switch, including port membership changes. VLAN manipulation is a key technique in VLAN hopping attacks and network segmentation bypass. An attacker who modifies VLAN configuration can move ports between VLANs to gain access to restricted network segments, or remove VLAN isolation entirely.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should monitor VLAN changes because unauthorized modifications can break network segmentation and expose sensitive network zones to unauthorized access.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - DefenseEvasion
+relevantTechniques:
+  - T1599
+query: |
+  // Lookback: 24 hours for VLAN configuration changes
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // First filter: match CLI command log events
+  | where SyslogMessage has_any ("CLI.logRemoteCmd", "CLI.logLocalCmd", "cm.CLILog")
+  // Key filter: match VLAN-related configuration commands
+  | where SyslogMessage has_any (
+      "create vlan", "delete vlan", "configure vlan",
+      "add vlan", "add ports", "delete ports",
+      "vlan tag", "vlan untag",
+      "configure vlan-translation",
+      "enable vlan", "disable vlan"
+    )
+  // Classify the action type for quick triage
+  | extend Action = case(
+      SyslogMessage has "delete", "DELETED",
+      SyslogMessage has "create", "CREATED",
+      SyslogMessage has "configure", "MODIFIED",
+      "CHANGED"
+    )
+  | project TimeGenerated, HostName, Action, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

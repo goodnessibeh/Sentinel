@@ -1,0 +1,45 @@
+id: 1c82cfc2-e26a-42a1-9db4-73636ce5bb02
+name: HA Failover Detected
+description: |
+  Detects high availability failover events where the standby FortiGate unit has taken over as the active unit. HA failovers can be triggered by hardware failure, software crashes, or deliberate attacks targeting the primary unit. While failovers ensure continued operation, they should be investigated to determine the root cause — especially if they occur outside of maintenance windows or are accompanied by other suspicious events.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: HA failovers indicate the primary firewall experienced a critical failure, which could be caused by a DoS attack, exploit, or hardware issue that requires immediate root cause analysis.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  let lookback = 24h;
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for HA-related log entries
+  | where Activity has "ha"
+  // Key filter: FortiGate event IDs for HA failover events, plus keyword fallback
+  | where DeviceEventClassID in ("35013", "35016", "0108035013", "0108035016")
+      or Message has "failover"
+  | project TimeGenerated, DeviceName, DeviceExternalID, Message
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DeviceName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

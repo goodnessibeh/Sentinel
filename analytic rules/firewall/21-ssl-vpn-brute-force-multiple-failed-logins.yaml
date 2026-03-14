@@ -1,0 +1,60 @@
+id: a6ca9b64-e78d-4ed5-824e-7e71f6b42f90
+name: SSL VPN Brute Force — Multiple Failed Logins
+description: |
+  Detects multiple failed SSL VPN login attempts from a single source IP within a short time window. Brute force attacks against VPN portals are extremely common and represent one of the top initial access vectors for ransomware operators. A high number of failures — especially against multiple user accounts — indicates an active credential stuffing or password spraying attack.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: VPN brute force attacks are a leading initial access vector for ransomware, and detecting them early allows blocking the attacker IP before valid credentials are found.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1110
+query: |
+  let lookback = 1h;
+  let threshold = 5;
+  CommonSecurityLog
+  // Filter to the last 1 hour for near-real-time brute force detection
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for VPN-related log entries
+  | where Activity has "vpn"
+  // Key filter: only look at failed SSL VPN login attempts
+  | where DeviceAction == "ssl-login-fail"
+  // Aggregate failure counts per source IP to identify brute force patterns
+  | summarize
+      FailureCount = count(),
+      DistinctUsers = dcount(DestinationUserName),
+      Users = make_set(DestinationUserName, 10),
+      Reasons = make_set(Message, 5),
+      FirstAttempt = min(TimeGenerated),
+      LastAttempt = max(TimeGenerated)
+    by SourceIP
+  // Threshold filter: only alert when failures exceed the brute force threshold
+  | where FailureCount >= threshold
+  | project SourceIP, FailureCount, DistinctUsers, Users, Reasons, FirstAttempt, LastAttempt
+  | order by FailureCount desc
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: DestinationUserName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

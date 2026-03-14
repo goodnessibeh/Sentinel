@@ -1,0 +1,56 @@
+id: 7ad0385a-3a3d-4409-88b7-6ea44b55e1d3
+name: Port Mirroring Configuration Change
+description: |
+  **Description:** Detects when port mirroring is configured, enabled, or disabled on the switch. Port mirroring duplicates traffic from one or more ports to a monitoring port, and while it is a legitimate tool for network troubleshooting, unauthorized port mirroring is a primary technique for traffic interception and data exfiltration. An attacker with switch access can mirror sensitive traffic to a port connected to their capture device.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts must investigate port mirroring changes as unauthorized mirroring is a direct indicator of traffic interception and potential data exfiltration.
+severity: Critical
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1040
+query: |
+  // Lookback: 24 hours for port mirroring configuration changes
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match CLI commands related to port mirroring or HAL mirror events
+  | where (SyslogMessage has_any ("CLI.logRemoteCmd", "CLI.logLocalCmd", "cm.CLILog")
+      and SyslogMessage has_any (
+          "mirror", "port-mirror", "mirroring",
+          "configure mirror", "enable mirror", "disable mirror",
+          "create mirror", "delete mirror",
+          "monitor port", "analyzer port"
+      ))
+      or SyslogMessage has "HAL.Mirror"
+  // Classify the action type for quick triage
+  | extend Action = case(
+      SyslogMessage has_any ("disable", "delete"), "DISABLED/DELETED",
+      SyslogMessage has_any ("enable", "create"), "ENABLED/CREATED",
+      SyslogMessage has "configure", "MODIFIED",
+      "CHANGED"
+    )
+  | project TimeGenerated, HostName, Action, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

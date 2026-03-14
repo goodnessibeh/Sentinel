@@ -1,0 +1,61 @@
+id: c15788fb-90d1-48b1-ae97-f552b764c47d
+name: Newly Registered/Observed Domain Access
+description: |
+  Detects internal hosts accessing domains that FortiGuard has classified as newly registered or newly observed. Attackers frequently register fresh domains for phishing campaigns, malware distribution, and C2 infrastructure because new domains have no reputation history and often bypass traditional blocklists. While some newly registered domains are legitimate, the overlap with attacker infrastructure is high enough to warrant monitoring.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: Newly registered domains are disproportionately used for phishing and malware campaigns, and access to them should be correlated with other indicators to identify early-stage attacks.
+severity: Low
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CommandAndControl
+relevantTechniques:
+  - T1583.001
+query: |
+  let lookback = 24h;
+  // FortiGuard category IDs for newly observed/registered domains
+  let NewDomainCategories = dynamic([61, 62]); // Newly Observed Domain, Newly Registered Domain
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for web filter log entries
+  | where Activity has "webfilter"
+  // Extract and filter by new domain category IDs
+  | extend Category = toint(extract("FTNTFGTcat=(\\d+)", 1, AdditionalExtensions))
+  | where Category in (NewDomainCategories)
+  | project TimeGenerated, SourceIP, DestinationHostName, RequestURL,
+            DeviceAction, DestinationUserName, Category
+  // Aggregate by domain to identify the most frequently accessed new domains
+  | summarize
+      AccessCount = count(),
+      Users = make_set(DestinationUserName, 10)
+    by DestinationHostName
+  | order by AccessCount desc
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DestinationHostName
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: DestinationUserName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

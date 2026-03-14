@@ -1,0 +1,46 @@
+id: a0d94c5e-16a7-461c-b53c-969897ad4bca
+name: CLI Command Audit — Remote Commands
+description: |
+  **Description:** Audits CLI commands executed on the switch, distinguishing between remote (SSH/Telnet) and local (console) sessions. Remote command execution is the primary method attackers use after gaining switch access. Monitoring all commands provides forensic evidence and enables detection of destructive or suspicious commands such as disabling security features, creating backdoor accounts, or modifying ACLs.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should review CLI command audits to detect post-compromise activity such as security feature disablement, backdoor creation, or configuration tampering.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Execution
+relevantTechniques:
+  - T1059
+query: |
+  // Lookback: 24 hours for CLI command audit events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match remote and local CLI command log events
+  | where SyslogMessage has_any ("CLI.logRemoteCmd", "CLI.logLocalCmd")
+  // Parse severity and component from the EMS message
+  | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
+  // Classify as remote vs local for risk assessment (remote is higher risk)
+  | extend CommandType = iff(SyslogMessage has "Remote", "Remote", "Local")
+  | project TimeGenerated, HostName, CommandType, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

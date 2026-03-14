@@ -1,0 +1,57 @@
+id: c133fe2b-df8d-4d2e-801f-409bea44d995
+name: DoS Anomaly Detection Triggered
+description: |
+  Detects FortiGate DoS anomaly detection events, which fire when traffic patterns match known denial-of-service signatures such as SYN floods, UDP floods, ICMP floods, and other volumetric or protocol-based attacks. These events indicate that someone is actively attempting to overwhelm your network resources or specific services. The aggregation by source IP helps identify the top attacking hosts and their targets.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: DoS anomaly events indicate active denial-of-service attacks that can disrupt critical services and may also serve as cover for simultaneous intrusion attempts occurring while the SOC is distracted.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  let lookback = 24h;
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for anomaly detection log entries
+  | where Activity has "anomaly"
+  | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
+            DeviceAction, Message, DeviceName
+  // Aggregate anomaly events per source IP and device to identify top attackers
+  | summarize
+      AnomalyCount = count(),
+      Targets = make_set(DestinationIP, 10),
+      Ports = make_set(DestinationPort, 10)
+    by SourceIP, DeviceName
+  | order by AnomalyCount desc
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: DestinationIP
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DeviceName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

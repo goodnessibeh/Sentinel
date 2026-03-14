@@ -1,0 +1,44 @@
+id: 8c302931-02b8-4bfc-8653-78bb8c89416c
+name: New LLDP Neighbor — Rogue Device Detection
+description: |
+  **Description:** Detects when a new LLDP neighbor appears on a switch port. While new neighbors are expected during legitimate deployments, unexpected neighbors may indicate a rogue device such as an unauthorized switch, access point, or network tap being connected to the infrastructure. Cross-referencing new neighbors against a known device inventory is essential for identifying unauthorized devices.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate new LLDP neighbors that do not correspond to approved change requests, as they may indicate unauthorized device deployment or physical intrusion.
+severity: Low
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1200
+query: |
+  // Lookback: 24 hours for new LLDP neighbor events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match LLDP neighbor addition events
+  | where SyslogMessage has "LLDP.NbrAdd"
+  // Extract the port where the new neighbor was detected
+  | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
+  | project TimeGenerated, HostName, Port, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

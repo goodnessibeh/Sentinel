@@ -1,0 +1,52 @@
+id: b8cacb14-b8d3-4578-a36c-912b9b7c352d
+name: "DNS Botnet C&C Domain Blocked"
+description: |
+  Detects DNS queries that the FortiGate DNS filter identified as botnet command-and-control domains. When a host queries a known C2 domain, it strongly indicates that the host is infected with malware and attempting to reach its C2 server for instructions, payload delivery, or data exfiltration. Even though the DNS query was blocked, the infected host still needs to be investigated and remediated.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: DNS queries to known botnet C2 domains are a near-certain indicator of active malware infection on the querying host, requiring immediate endpoint isolation and forensic investigation.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CommandAndControl
+relevantTechniques:
+  - T1071.004
+query: |
+  let lookback = 24h;
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for DNS-related log entries
+  | where Activity has "dns"
+  // Key filter: identify botnet and C&C related DNS blocks
+  | where Message has "botnet" or Message has "C&C"
+  // Extract the queried domain and associated botnet IP for context
+  | extend QueriedDomain = DestinationHostName
+  | extend BotnetIP = extract("FTNTFGTbotnetip=([^;\\s]+)", 1, AdditionalExtensions)
+  | project TimeGenerated, SourceIP, QueriedDomain, BotnetIP,
+            DeviceAction, Message
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: QueriedDomain
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

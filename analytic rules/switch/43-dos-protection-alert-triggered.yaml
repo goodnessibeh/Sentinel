@@ -1,0 +1,44 @@
+id: cefc20fa-53d6-4637-947c-ddf1cb9e554c
+name: DoS Protection Alert Triggered
+description: |
+  **Description:** Detects when the switch's built-in DoS protection feature triggers an alert or takes action against suspected denial-of-service traffic. The switch can detect various DoS attack patterns including SYN floods, ICMP floods, and other volumetric attacks directed at the switch's control plane. When triggered, the switch may rate-limit or block the offending traffic to protect itself.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate DoS protection alerts because they confirm that attack traffic has reached sufficient volume to trigger hardware-level protection, indicating an active denial-of-service attack.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  // Lookback: 24 hours for DoS protection events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match DoS protection alert and action events
+  | where SyslogMessage has_any ("dosprotect.Alert", "dosprotect.Action")
+  // Parse severity and component from the EMS message
+  | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

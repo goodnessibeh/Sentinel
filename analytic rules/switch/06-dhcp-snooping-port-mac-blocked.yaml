@@ -1,0 +1,46 @@
+id: 7cca2575-f2b2-4d12-99d1-dee2724fab5a
+name: DHCP Snooping Port/MAC Blocked
+description: |
+  **Description:** Detects when the switch's DHCP snooping feature actively blocks a port or MAC address due to a security violation. This means the switch has taken enforcement action against a device that violated DHCP security policy, such as sending unauthorized DHCP responses or exceeding rate limits. The block may be temporary or permanent depending on configuration.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate blocked ports/MACs as they confirm that a security violation was severe enough to trigger automated enforcement, indicating an active threat or misconfigured device.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1557.003
+query: |
+  // Lookback: 24 hours of DHCP snooping block events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match port-blocked or MAC-blocked events from IP security
+  | where SyslogMessage has_any ("ipSecur.blkPort", "ipSecur.blkMac")
+  // Extract port, MAC, and block duration for triage
+  | extend Port = extract(@"[Pp]ort\s+(\S+)", 1, SyslogMessage)
+  | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
+  | extend BlockDuration = extract(@"(\d+)\s+seconds", 1, SyslogMessage)
+  | project TimeGenerated, HostName, Port, MACAddress, BlockDuration, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

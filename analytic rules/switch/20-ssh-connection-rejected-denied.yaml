@@ -1,0 +1,48 @@
+id: 4cee8db0-3b9e-43e7-9b9d-99c7f5c3c030
+name: SSH Connection Rejected/Denied
+description: |
+  **Description:** Detects rejected or denied SSH connection attempts to the switch management interface. SSH rejections occur when connections are denied due to access control lists, maximum session limits, or authentication failures at the SSH protocol level (before AAA). Tracking these events helps identify reconnaissance activity and unauthorized access attempts targeting network infrastructure.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should monitor SSH rejections as they may reveal scanning activity or an attacker probing the network for accessible management interfaces.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1110
+query: |
+  // Lookback: 24 hours for SSH rejection events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match SSH rejection and authentication failure messages
+  | where SyslogMessage has_any ("exsshd.RejctConnAccessDeny", "exsshd.AuthFail")
+  // Extract the source IP of the rejected connection
+  | extend SourceIP = extract(@"(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
+  // Aggregate rejections per source IP per hour to detect persistent attackers
+  | summarize
+      RejectCount = count(),
+      Switches = make_set(HostName, 10)
+    by SourceIP, bin(TimeGenerated, 1h)
+  | order by RejectCount desc
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

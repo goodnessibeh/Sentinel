@@ -1,0 +1,53 @@
+id: 89b9feb2-5c75-4f3a-ba11-19a200836442
+name: Encoded PowerShell Command Execution
+description: |
+  This detection identifies PowerShell processes launched with Base64-encoded command-line arguments, a technique heavily used by attackers to obfuscate malicious payloads. Legitimate administrators rarely use encoded commands, making this a reliable indicator of malicious activity. The query automatically decodes the payload so analysts can immediately see what was executed.
+  
+  Importance: A SOC analyst should investigate because encoded PowerShell is the most common obfuscation technique used in malware droppers, post-exploitation frameworks, and fileless attacks.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: MicrosoftThreatProtection
+    dataTypes:
+      - DeviceProcessEvents
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Execution
+relevantTechniques:
+  - T1059.001
+query: |
+  DeviceProcessEvents
+  // 24-hour lookback for encoded PowerShell execution
+  | where TimeGenerated > ago(24h)
+  // Filter for PowerShell executables
+  | where FileName in~ ("powershell.exe", "pwsh.exe")
+  // Key filter: detect encoded command flags
+  | where ProcessCommandLine has_any ("-enc", "-EncodedCommand", "-e ", "-ec ")
+  // Extract the Base64 payload from the command line
+  | extend EncodedPayload = extract(@"(?i)-[eE](?:nc(?:odedCommand)?|c)?\s+([A-Za-z0-9+/=]{20,})", 1, ProcessCommandLine)
+  | where isnotempty(EncodedPayload)
+  // Decode the Base64 payload so analysts can read the actual command
+  | extend DecodedCommand = base64_decode_tostring(EncodedPayload)
+  | project TimeGenerated, DeviceName, AccountName,
+            ProcessCommandLine, DecodedCommand,
+            InitiatingProcessFileName, InitiatingProcessCommandLine
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: FullName
+        columnName: DeviceName
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountName
+  - entityType: Process
+    fieldMappings:
+      - identifier: CommandLine
+        columnName: ProcessCommandLine
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

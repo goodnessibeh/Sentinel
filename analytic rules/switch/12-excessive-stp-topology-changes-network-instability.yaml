@@ -1,0 +1,50 @@
+id: 3f509fdf-4658-49c0-809f-d5614e23a733
+name: Excessive STP Topology Changes — Network Instability
+description: |
+  **Description:** Detects when an unusually high number of STP topology changes occur on a single switch within a short time window. Excessive topology changes cause repeated MAC table flushes and traffic flooding, leading to severe network degradation. This pattern may indicate a deliberate STP DoS attack, a flapping link, or a misconfigured device sending rapid BPDUs.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should escalate excessive STP topology changes because they indicate either an active Layer 2 attack or a hardware/configuration issue causing significant network instability.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 30m
+queryPeriod: 30m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  // Lookback: 30-minute window for detecting excessive topology changes
+  let lookback = 30m;
+  // Threshold: more than 5 topology changes in 10 minutes is abnormal
+  let threshold = 5;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match all STP topology and root change events
+  | where SyslogMessage has_any ("STP.State.Topology", "STP.InTopChg", "STP.State.RootChg")
+  // Aggregate topology change events per switch in 10-minute bins
+  | summarize
+      TCNCount = count(),
+      Messages = make_set(SyslogMessage, 10)
+    by HostName, bin(TimeGenerated, 10m)
+  // Detection logic: alert only when count exceeds threshold
+  | where TCNCount > threshold
+  | project TimeGenerated, HostName, TCNCount, Messages
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

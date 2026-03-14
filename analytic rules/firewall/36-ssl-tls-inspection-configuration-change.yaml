@@ -1,0 +1,56 @@
+id: 8e95b781-5e1e-4a71-ada9-243f089c1a37
+name: SSL/TLS Inspection Configuration Change
+description: |
+  Detects changes to SSL/TLS inspection profiles, certificate configurations, and SSL exemption rules. SSL inspection is critical for detecting threats hidden in encrypted traffic. An attacker who disables or weakens SSL inspection effectively creates a blind spot where malware, C2 communications, and data exfiltration can occur undetected. Adding SSL exemptions for specific sites is also a technique attackers use to whitelist their C2 domains from inspection.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: Weakening SSL inspection creates encrypted blind spots where malware, C2, and exfiltration can operate undetected, and unauthorized exemptions may whitelist attacker infrastructure.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - DefenseEvasion
+relevantTechniques:
+  - T1562
+query: |
+  let lookback = 24h;
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for system-level log entries
+  | where Activity has "system"
+  // Key filter: match SSL/TLS inspection and certificate-related configuration changes
+  | where Message has_any (
+      "ssl-ssh-profile", "ssl inspection", "deep-inspection",
+      "certificate-inspection", "ssl-exempt", "ssl exempt",
+      "certificate", "ca-cert", "local-cert"
+    )
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DeviceName
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: DestinationUserName
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

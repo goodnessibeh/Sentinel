@@ -1,0 +1,50 @@
+id: 8d93931e-de1e-4195-a09e-1435f7922f3f
+name: IP Security Packet Drop
+description: |
+  **Description:** Detects when the switch's IP security feature drops packets that fail validation checks such as source IP verification, DHCP snooping binding table lookups, or ARP inspection. A high volume of dropped packets on specific ports indicates either persistent attack attempts or a misconfigured device that is generating invalid traffic.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should monitor drop rates as sustained packet drops may indicate an ongoing spoofing or injection attack that the switch is actively mitigating.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1557
+query: |
+  // Lookback: 1 hour — shorter window for high-frequency packet drop events
+  let lookback = 1h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match IP security dropped packet messages
+  | where SyslogMessage has "ipSecur.drpPkt"
+  // Extract the port where drops are occurring
+  | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
+  // Aggregate drops per switch in 5-minute bins to identify sustained activity
+  | summarize
+      DropCount = count(),
+      Ports = make_set(Port, 20)
+    by HostName, bin(TimeGenerated, 5m)
+  // Threshold: more than 10 drops in 5 minutes warrants investigation
+  | where DropCount > 10
+  | order by DropCount desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

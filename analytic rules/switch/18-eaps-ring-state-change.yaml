@@ -1,0 +1,44 @@
+id: 3027ad85-ffce-422b-8dc4-fe2184273125
+name: EAPS Ring State Change
+description: |
+  **Description:** Detects state changes in the Ethernet Automatic Protection Switching (EAPS) ring topology. EAPS provides sub-second failover for ring-based network designs common in campus and metro Ethernet deployments. A state change from Complete to Failed indicates a ring break, while rapid state transitions may indicate instability in the ring that could lead to traffic blackholing or loops.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should monitor EAPS state changes because ring failures affect redundancy and can lead to traffic loss or loops if the protection mechanism does not converge correctly.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  // Lookback: 24 hours for EAPS ring state events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match EAPS state and topology change events
+  | where SyslogMessage has_any ("EAPS.State", "EAPS.Topology")
+  // Parse severity and component from the EMS message
+  | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

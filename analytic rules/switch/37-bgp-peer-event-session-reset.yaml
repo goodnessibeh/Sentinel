@@ -1,0 +1,46 @@
+id: eeacba8a-1d0b-45aa-87db-44cbfce020d2
+name: BGP Peer Event — Session Reset
+description: |
+  **Description:** Detects BGP session resets, failures, and state transitions to down/idle states. BGP session disruptions can cause route withdrawals and reconvergence, leading to traffic blackholing or suboptimal routing. In a targeted attack, an adversary may send TCP RST packets or exploit BGP vulnerabilities to tear down peering sessions and disrupt network routing.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should investigate BGP session resets because they can indicate a targeted routing attack, peering misconfiguration, or infrastructure failure affecting upstream connectivity.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  // Lookback: 24 hours for BGP session events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match BGP event and miscellaneous messages
+  | where SyslogMessage has_any ("BGP.event", "BGP.misc")
+  // Further filter to session disruption keywords only
+  | where SyslogMessage has_any ("Down", "down", "Reset", "reset", "Idle", "idle", "cease")
+  // Parse severity and component from the EMS message
+  | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

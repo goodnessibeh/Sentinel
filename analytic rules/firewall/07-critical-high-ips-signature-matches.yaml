@@ -1,0 +1,55 @@
+id: 82889e40-ea28-48f3-8545-77b6294f7b10
+name: Critical/High IPS Signature Matches
+description: |
+  Detects IPS signature matches rated as critical or high severity by the FortiGate IPS engine. These signatures correspond to known exploitation techniques, vulnerability exploits, and attack payloads actively used in the wild. A critical or high IPS hit means the firewall identified traffic that matches a known attack pattern, regardless of whether it was blocked or allowed.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: Critical and high IPS signatures represent active exploitation attempts against your network and must be triaged to confirm the attack was blocked and the target host is not compromised.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1190
+query: |
+  let lookback = 24h;
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for IPS-related log entries
+  | where Activity has "utm:ips" or Activity has "ips"
+  // Extract IPS-specific fields from the additional extensions
+  | extend ThreatLevel = extract("FTNTFGTcrlevel=([^;\\s]+)", 1, AdditionalExtensions)
+  | extend AttackName = extract("FTNTFGTattack=([^;]+)", 1, AdditionalExtensions)
+  | extend AttackId = extract("FTNTFGTattackid=([^;\\s]+)", 1, AdditionalExtensions)
+  | extend ThreatScore = toint(extract("FTNTFGTcrscore=([^;\\s]+)", 1, AdditionalExtensions))
+  // Only surface critical and high severity detections
+  | where ThreatLevel in ("critical", "high")
+  | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
+            AttackName, AttackId, ThreatLevel, ThreatScore,
+            DeviceAction, ApplicationProtocol, Message
+  | order by ThreatScore desc
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: DestinationIP
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

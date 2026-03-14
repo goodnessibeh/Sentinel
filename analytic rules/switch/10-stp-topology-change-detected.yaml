@@ -1,0 +1,46 @@
+id: ae07ded0-94d7-4d3f-8732-2d1f80be5f5c
+name: STP Topology Change Detected
+description: |
+  **Description:** Detects Spanning Tree Protocol topology change notifications (TCNs) on the switch. STP topology changes cause the switch to flush its MAC address table and temporarily flood traffic, which degrades network performance. While some TCNs are expected during maintenance, unexpected changes may indicate physical link failures, misconfigurations, or deliberate STP manipulation.
+  
+  This detection is designed for Extreme Networks switches.
+  
+  Importance: SOC analysts should correlate STP topology changes with other events because they can be a side effect of physical intrusion, unauthorized device connections, or deliberate network attacks.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  // Lookback: 24 hours for STP topology change events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match all STP topology change related EMS messages
+  | where SyslogMessage has_any ("STP.State.Topology", "STP.InTopChg", "STP.SendClntTopoChgMsg")
+  // Parse severity and component from structured EMS format
+  | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
+  // Extract the STP domain name for context
+  | extend StpDomain = extract(@"\[([^\]]+)\]", 1, SyslogMessage)
+  | project TimeGenerated, HostName, Severity, Component, StpDomain, SyslogMessage
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh

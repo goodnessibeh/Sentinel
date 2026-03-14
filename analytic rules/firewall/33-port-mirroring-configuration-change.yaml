@@ -1,0 +1,57 @@
+id: abcdb647-e92f-4f47-9448-9fb198ac7452
+name: Port Mirroring Configuration Change
+description: |
+  Detects changes to packet capture, traffic mirroring, or sniffer configurations on FortiGate devices. An attacker who has gained admin access may configure port mirroring to capture sensitive traffic (credentials, session tokens, confidential data) for exfiltration. Sniffer policies and diagnostic sniffer commands can also be used to passively intercept traffic without modifying firewall rules, making this a stealthy attack technique.
+  
+  This detection is designed for Fortinet FortiGate firewalls.
+  
+  Importance: Unauthorized port mirroring or packet capture configuration enables an attacker to passively intercept all network traffic including credentials and sensitive data without triggering other security alerts.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: Fortinet
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1040
+query: |
+  let lookback = 24h;
+  CommonSecurityLog
+  // Filter to the last 24 hours of logs
+  | where TimeGenerated > ago(lookback)
+  // Scope to FortiGate firewall logs only
+  | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
+  // Filter for system-level log entries
+  | where Activity has "system"
+  // Key filter: match sniffer, packet capture, mirroring, and flow export config changes
+  | where Message has_any (
+      "sniffer", "packet-capture", "mirror",
+      "port-mirror", "traffic-mirror",
+      "sflow", "netflow", "nflow",
+      "diag sniff", "diagnose sniffer"
+    )
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | order by TimeGenerated desc
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: DeviceName
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: DestinationUserName
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+version: 1.0.0
+kind: Scheduled
+author:
+  name: Goodness Caleb Ibeh
