@@ -1,0 +1,92 @@
+**Author:** Goodness Caleb Ibeh
+
+# Port Link Flap Detection
+
+Detects when the switch's built-in link flap detection mechanism triggers, indicating that a port is rapidly transitioning between up and down states. Link flapping can be caused by a faulty cable, a failing NIC, an overloaded switch port, or a deliberate attempt to destabilize the network. The switch may automatically disable the flapping port to protect network stability.
+
+**Importance:** SOC analysts should investigate link flaps because persistent flapping on a port can cause widespread disruption across the VLAN and may indicate physical tampering or hardware failure.
+
+**MITRE:** T1498 — Network Denial of Service
+
+**Severity:** Medium
+
+**Entity Mapping:**
+
+| Entity Type | Identifier | Column |
+|---|---|---|
+| Host | HostName | HostName |
+
+```kql
+// Reference: ExtremeXOS EMS — HAL.Port.PortLinkFlapActLogEvent — https://documentation.extremenetworks.com/ems_catalog_31.5/GUID-C3B7D716-598A-4ECF-8015-5374C89B01CE.shtml
+// Lookback: 24 hours for link flap log events
+let lookback = 24h;
+Syslog
+| where TimeGenerated > ago(lookback)
+// Filter to Extreme Networks switch logs
+| where Facility == "local7"
+// Key filter: match the port link flap action log event
+| where SyslogMessage has "PortLinkFlapActLogEvent"
+// Extract the affected port and its flap status
+| extend Port = extract(@"Port\s+(\S+)", 1, SyslogMessage)
+| extend FlapStatus = extract(@"status is (\w+)", 1, SyslogMessage)
+| project TimeGenerated, HostName, Port, FlapStatus, SyslogMessage
+| order by TimeGenerated desc
+```
+
+---
+
+## Sentinel Analytics Rule — YAML
+
+```yaml
+id: fdf17203-e7ea-4820-b86b-283aa7b1d0f9
+name: "Port Link Flap Detection"
+description: |
+  Detects when the switch's built-in link flap detection mechanism triggers, indicating that a port is rapidly transitioning between up and down states. Link flapping can be caused by a faulty cable, a failing NIC, an overloaded switch port, or a deliberate attempt to destabilize the network. The switch may automatically disable the flapping port to protect network stability.
+  SOC analysts should investigate link flaps because persistent flapping on a port can cause widespread disruption across the VLAN and may indicate physical tampering or hardware failure.
+  Designed for Extreme Networks switches (ExtremeXOS/Switch Engine, VOSS).
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: Syslog
+    dataTypes:
+      - Syslog
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1498
+query: |
+  // Lookback: 24 hours for link flap log events
+  let lookback = 24h;
+  Syslog
+  | where TimeGenerated > ago(lookback)
+  // Filter to Extreme Networks switch logs
+  | where Facility == "local7"
+  // Key filter: match the port link flap action log event
+  | where SyslogMessage has "PortLinkFlapActLogEvent"
+  // Extract the affected port and its flap status
+  | extend Port = extract(@"Port\s+(\S+)", 1, SyslogMessage)
+  | extend FlapStatus = extract(@"status is (\w+)", 1, SyslogMessage)
+  | project TimeGenerated, HostName, Port, FlapStatus, SyslogMessage
+  | order by TimeGenerated desc
+
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostName
+customDetails:
+  Port: Port
+  FlapStatus: FlapStatus
+version: 1.0.0
+kind: Scheduled
+```
+
+## References
+
+- [Extreme Networks — Link-Flap Detection (ExtremeXOS 30.2)](https://documentation.extremenetworks.com/exos_30.2.2/GUID-657A01D2-799F-4CF7-94FE-29996520AFBA.shtml)
+- [Extreme Networks — HAL Port EMS Messages (ExtremeXOS 31.5)](https://documentation.extremenetworks.com/ems_catalog_31.5/GUID-C3B7D716-598A-4ECF-8015-5374C89B01CE.shtml)
+- [Extreme Networks — EMS Message Catalog (ExtremeXOS 31.2)](https://documentation.extremenetworks.com/ems_catalog_31.2/GUID-6C7DD8DA-F85E-4313-BFC5-742485964DCC.shtml)

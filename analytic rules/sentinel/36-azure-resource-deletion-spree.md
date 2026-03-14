@@ -1,0 +1,90 @@
+**Author:** Goodness Caleb Ibeh
+
+# Azure Resource Deletion Spree
+
+This detection identifies accounts deleting a high number of Azure resources in a short time window, which indicates either a destructive attack or a compromised account performing sabotage. Mass deletion of cloud resources can cause severe service disruption and data loss. The query aggregates successful delete operations by caller identity and flags those exceeding a configurable threshold.
+
+**Importance:** A SOC analyst should treat this as critical because mass Azure resource deletion can cause immediate and widespread service outages and permanent data loss.
+
+**MITRE:** T1485 — Data Destruction
+
+**Severity:** High
+
+**Entity Mapping:**
+
+| Entity Type | Identifier | Column |
+|---|---|---|
+| Account | FullName | Caller |
+
+```kql
+let threshold = 10;
+AzureActivity
+// Short 1-hour window to detect deletion sprees
+| where TimeGenerated > ago(1h)
+// Filter for delete operations only
+| where OperationNameValue has "delete"
+// Only count successful deletions
+| where ActivityStatusValue == "Succeeded"
+// Aggregate: count deletions per caller to detect spree behavior
+| summarize
+    DeleteCount = count(),
+    Resources = make_set(Resource, 20),
+    ResourceTypes = make_set(ResourceProviderValue, 10),
+    ResourceGroups = make_set(ResourceGroup, 10)
+  by Caller, CallerIpAddress
+// Threshold: flag accounts exceeding the deletion limit
+| where DeleteCount >= threshold
+| project Caller, CallerIpAddress, DeleteCount, ResourceTypes, Resources, ResourceGroups
+```
+
+---
+
+## Sentinel Analytics Rule — YAML
+
+```yaml
+id: 36f7a8b9-c0d1-4e2f-3a4b-5c6d7e8f9a66
+name: "Azure Resource Deletion Spree"
+description: |
+  This detection identifies accounts deleting a high number of Azure resources in a short time window, which indicates either a destructive attack or a compromised account performing sabotage. Mass deletion of cloud resources can cause severe service disruption and data loss.
+  A SOC analyst should treat this as critical because mass Azure resource deletion can cause immediate and widespread service outages and permanent data loss.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes:
+      - AzureActivity
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Impact
+relevantTechniques:
+  - T1485
+query: |
+  let threshold = 10;
+  AzureActivity
+  // Short 1-hour window to detect deletion sprees
+  | where TimeGenerated > ago(1h)
+  // Filter for delete operations only
+  | where OperationNameValue has "delete"
+  // Only count successful deletions
+  | where ActivityStatusValue == "Succeeded"
+  // Aggregate: count deletions per caller to detect spree behavior
+  | summarize
+      DeleteCount = count(),
+      Resources = make_set(Resource, 20),
+      ResourceTypes = make_set(ResourceProviderValue, 10),
+      ResourceGroups = make_set(ResourceGroup, 10)
+    by Caller, CallerIpAddress
+  // Threshold: flag accounts exceeding the deletion limit
+  | where DeleteCount >= threshold
+  | project Caller, CallerIpAddress, DeleteCount, ResourceTypes, Resources, ResourceGroups
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Caller
+version: 1.0.0
+kind: Scheduled
+```

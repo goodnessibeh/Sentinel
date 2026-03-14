@@ -1,0 +1,101 @@
+**Author:** Goodness Caleb Ibeh
+
+# Kerberoasting — Abnormal Service Ticket Requests
+
+This detection identifies Kerberoasting attacks by finding accounts that request an unusually high number of Kerberos service tickets (TGS) with weak RC4 encryption. In a Kerberoasting attack, the adversary requests service tickets for service accounts, then cracks the tickets offline to obtain plaintext passwords. The use of RC4 encryption and high volume of distinct service ticket requests are the key indicators.
+
+**Importance:** A SOC analyst should investigate because Kerberoasting can lead to the compromise of service account passwords, which often have elevated privileges and rarely get rotated.
+
+**MITRE:** T1558.003 — Steal or Forge Kerberos Tickets: Kerberoasting
+
+**Severity:** Medium
+
+**Entity Mapping:**
+
+| Entity Type | Identifier | Column |
+|---|---|---|
+| Account | FullName | TargetAccount |
+| Host | FullName | Computer |
+
+```kql
+let threshold = 5;
+SecurityEvent
+// Short 1-hour window — Kerberoasting happens in bursts
+| where TimeGenerated > ago(1h)
+// Event ID 4769 = A Kerberos service ticket was requested
+| where EventID == 4769
+| where Status == "0x0"
+// Key filter: RC4 (weak) encryption indicates Kerberoasting
+| where TicketEncryptionType in ("0x17", "0x18")
+// Exclude machine accounts (end with $) and built-in accounts
+| where ServiceName !endswith "$"
+| where ServiceName !in ("krbtgt", "kadmin")
+// Aggregate: count distinct services per requesting account
+| summarize
+    TicketCount = count(),
+    ServiceNames = make_set(ServiceName, 20),
+    DistinctServices = dcount(ServiceName)
+  by TargetAccount = Account, Computer, IpAddress
+// Threshold: requesting tickets for many distinct services is anomalous
+| where DistinctServices >= threshold
+| project TargetAccount, Computer, IpAddress, DistinctServices, ServiceNames
+```
+
+---
+
+## Sentinel Analytics Rule — YAML
+
+```yaml
+id: 20b1c2d3-e4f5-4a6b-7c8d-9e0f1a2b3c40
+name: "Kerberoasting — Abnormal Service Ticket Requests"
+description: |
+  This detection identifies Kerberoasting attacks by finding accounts that request an unusually high number of Kerberos service tickets (TGS) with weak RC4 encryption. In a Kerberoasting attack, the adversary requests service tickets for service accounts, then cracks the tickets offline to obtain plaintext passwords.
+  A SOC analyst should investigate because Kerberoasting can lead to the compromise of service account passwords, which often have elevated privileges and rarely get rotated.
+severity: Medium
+status: Available
+requiredDataConnectors:
+  - connectorId: SecurityEvents
+    dataTypes:
+      - SecurityEvent
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1558.003
+query: |
+  let threshold = 5;
+  SecurityEvent
+  // Short 1-hour window — Kerberoasting happens in bursts
+  | where TimeGenerated > ago(1h)
+  // Event ID 4769 = A Kerberos service ticket was requested
+  | where EventID == 4769
+  | where Status == "0x0"
+  // Key filter: RC4 (weak) encryption indicates Kerberoasting
+  | where TicketEncryptionType in ("0x17", "0x18")
+  // Exclude machine accounts (end with $) and built-in accounts
+  | where ServiceName !endswith "$"
+  | where ServiceName !in ("krbtgt", "kadmin")
+  // Aggregate: count distinct services per requesting account
+  | summarize
+      TicketCount = count(),
+      ServiceNames = make_set(ServiceName, 20),
+      DistinctServices = dcount(ServiceName)
+    by TargetAccount = Account, Computer, IpAddress
+  // Threshold: requesting tickets for many distinct services is anomalous
+  | where DistinctServices >= threshold
+  | project TargetAccount, Computer, IpAddress, DistinctServices, ServiceNames
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: TargetAccount
+  - entityType: Host
+    fieldMappings:
+      - identifier: FullName
+        columnName: Computer
+version: 1.0.0
+kind: Scheduled
+```

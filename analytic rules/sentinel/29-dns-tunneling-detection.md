@@ -1,0 +1,97 @@
+**Author:** Goodness Caleb Ibeh
+
+# DNS Tunneling Detection
+
+This detection identifies potential DNS tunneling by finding DNS queries with abnormally long subdomain names, which is characteristic of data being encoded into DNS requests. DNS tunneling is a covert communication technique where attackers encode commands and exfiltrated data within DNS queries and responses to bypass network security controls. Long, high-entropy subdomains with high query volumes to the same top-level domain are the key indicators.
+
+**Importance:** A SOC analyst should investigate because DNS tunneling allows attackers to maintain command and control communication and exfiltrate data through a protocol that is rarely inspected or blocked.
+
+**MITRE:** T1071.004 — Application Layer Protocol: DNS
+
+**Severity:** High
+
+**Entity Mapping:**
+
+| Entity Type | Identifier | Column |
+|---|---|---|
+| Host | FullName | Computer |
+| IP | Address | ClientIP |
+
+```kql
+DnsEvents
+// 24-hour lookback for DNS query analysis
+| where TimeGenerated > ago(24h)
+// Parse the domain into components for analysis
+| extend DomainParts = split(Name, ".")
+| extend SubdomainLength = strlen(tostring(DomainParts[0]))
+| extend TLD = strcat(tostring(DomainParts[-2]), ".", tostring(DomainParts[-1]))
+// Key filter: long subdomains indicate encoded data in DNS queries
+| where SubdomainLength > 30
+// Aggregate: measure query volume and subdomain characteristics per destination domain
+| summarize
+    QueryCount = count(),
+    AvgSubdomainLen = avg(SubdomainLength),
+    MaxSubdomainLen = max(SubdomainLength),
+    UniqueSubs = dcount(tostring(DomainParts[0]))
+  by TLD, ClientIP, Computer
+// Threshold: high query count + long average subdomain = tunneling
+| where QueryCount > 100 and AvgSubdomainLen > 20
+| project Computer, ClientIP, TLD, QueryCount, AvgSubdomainLen, MaxSubdomainLen, UniqueSubs
+```
+
+---
+
+## Sentinel Analytics Rule — YAML
+
+```yaml
+id: 29e0f1a2-b3c4-4d5e-6f7a-8b9c0d1e2fd9
+name: "DNS Tunneling Detection"
+description: |
+  This detection identifies potential DNS tunneling by finding DNS queries with abnormally long subdomain names, which is characteristic of data being encoded into DNS requests. DNS tunneling is a covert communication technique where attackers encode commands and exfiltrated data within DNS queries and responses.
+  A SOC analyst should investigate because DNS tunneling allows attackers to maintain command and control communication and exfiltrate data through a protocol that is rarely inspected or blocked.
+severity: High
+status: Available
+requiredDataConnectors:
+  - connectorId: DNS
+    dataTypes:
+      - DnsEvents
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CommandAndControl
+relevantTechniques:
+  - T1071.004
+query: |
+  DnsEvents
+  // 24-hour lookback for DNS query analysis
+  | where TimeGenerated > ago(24h)
+  // Parse the domain into components for analysis
+  | extend DomainParts = split(Name, ".")
+  | extend SubdomainLength = strlen(tostring(DomainParts[0]))
+  | extend TLD = strcat(tostring(DomainParts[-2]), ".", tostring(DomainParts[-1]))
+  // Key filter: long subdomains indicate encoded data in DNS queries
+  | where SubdomainLength > 30
+  // Aggregate: measure query volume and subdomain characteristics per destination domain
+  | summarize
+      QueryCount = count(),
+      AvgSubdomainLen = avg(SubdomainLength),
+      MaxSubdomainLen = max(SubdomainLength),
+      UniqueSubs = dcount(tostring(DomainParts[0]))
+    by TLD, ClientIP, Computer
+  // Threshold: high query count + long average subdomain = tunneling
+  | where QueryCount > 100 and AvgSubdomainLen > 20
+  | project Computer, ClientIP, TLD, QueryCount, AvgSubdomainLen, MaxSubdomainLen, UniqueSubs
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: FullName
+        columnName: Computer
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: ClientIP
+version: 1.0.0
+kind: Scheduled
+```
