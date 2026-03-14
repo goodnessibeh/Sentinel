@@ -1,5 +1,7 @@
 # KQL Sentinel — Syslog, CEF & Custom Log Parsing
 
+**Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)
+
 > Complete parsing patterns for Linux Syslog, CEF (Common Event Format), custom logs, and ASIM normalization.
 
 ---

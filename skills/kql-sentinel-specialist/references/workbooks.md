@@ -1,5 +1,7 @@
 # KQL Sentinel — Workbook Dashboards & ARM Templates
 
+**Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)
+
 > 9 creative dashboard designs with full KQL queries, visualization specifications, and ARM template deployment.
 
 ---

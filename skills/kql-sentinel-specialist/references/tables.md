@@ -1,5 +1,7 @@
 # KQL Sentinel — Complete Table Reference
 
+**Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)
+
 > All Microsoft Sentinel, Defender XDR, and Azure Monitor security tables with full schemas.
 
 ---

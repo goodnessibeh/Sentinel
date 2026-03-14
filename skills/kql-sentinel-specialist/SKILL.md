@@ -1,9 +1,13 @@
 ---
 name: kql-sentinel-specialist
 description: Expert KQL skill for Microsoft Sentinel, Defender XDR, and Azure Monitor. Covers complete KQL syntax, all security log tables, Syslog/CEF parsing, ASIM normalization, detection rule engineering with MITRE ATT&CK mapping, threat hunting, workbook dashboard design, and ARM template deployment. Use when writing KQL queries, building detection rules, creating Sentinel workbooks, or analyzing security logs.
+author: Goodness Caleb Ibeh
+linkedin: https://linkedin.com/in/caleb-ibeh
 ---
 
 # KQL Sentinel Specialist
+
+**Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)
 
 ## Quick Start — Decision Tree
 
