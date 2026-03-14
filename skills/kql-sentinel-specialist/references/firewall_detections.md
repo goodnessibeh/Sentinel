@@ -1,3 +1,10 @@
+---
+name: kql-sentinel-firewall-detections
+description: Fortinet FortiGate firewall detection rules for Microsoft Sentinel. 40 detections covering traffic security, IPS, antivirus, web filtering, application control, DNS security, DLP, VPN security, admin access, HA monitoring, network configuration changes (DHCP snooping, port mirroring, routing, NAT, SSL inspection), DoS anomalies, and email security. All queries target CommonSecurityLog via CEF.
+author: Goodness Caleb Ibeh
+linkedin: https://linkedin.com/in/caleb-ibeh
+---
+
 # KQL Sentinel — Fortinet FortiGate Firewall Detections
 
 **Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)

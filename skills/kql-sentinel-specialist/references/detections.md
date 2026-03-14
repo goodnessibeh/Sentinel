@@ -1,3 +1,10 @@
+---
+name: kql-sentinel-detections
+description: Detection rules library organized by MITRE ATT&CK tactics for Microsoft Sentinel, Defender XDR, and Azure Monitor. Includes 42 detection queries covering Initial Access, Execution, Persistence, Privilege Escalation, Defense Evasion, Credential Access, Discovery, Lateral Movement, Collection, C2, Exfiltration, and Impact with full KQL, entity mapping, and tuning guidance.
+author: Goodness Caleb Ibeh
+linkedin: https://linkedin.com/in/caleb-ibeh
+---
+
 # KQL Sentinel — Detection Rules Library
 
 **Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)

@@ -1,3 +1,10 @@
+---
+name: kql-sentinel-workbooks
+description: Sentinel workbook dashboard designs and ARM template deployment. 9 dashboards (SOC Command Center, Threat Intelligence, Identity & Access, Network Security, Endpoint Security, Email Security, Cloud Security Posture, User Behavior Analytics, Executive Summary) with full KQL queries, visualization types, parameter systems, conditional visibility, grid formatters, map settings, sparklines, heatmaps, and complete ARM templates with GitHub Actions and Azure DevOps CI/CD pipelines.
+author: Goodness Caleb Ibeh
+linkedin: https://linkedin.com/in/caleb-ibeh
+---
+
 # KQL Sentinel — Workbook Dashboards & ARM Templates
 
 **Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)

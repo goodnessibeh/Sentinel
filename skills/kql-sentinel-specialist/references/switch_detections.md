@@ -1,3 +1,10 @@
+---
+name: kql-sentinel-switch-detections
+description: Extreme Networks switch detection rules for Microsoft Sentinel. 45 detections covering port security (MAC lock, learning limits), DHCP snooping, Dynamic ARP Inspection, STP topology changes, link flap monitoring, loop/storm protection, 802.1X and RADIUS/TACACS+ authentication, configuration change auditing (DHCP snooping, port mirroring, ACL, VLAN, STP, routing), LLDP/CDP neighbor discovery, OSPF/BGP routing security, system health, DoS protection, and VOSS Fabric Connect. All queries target the Syslog table via ExtremeXOS EMS messages.
+author: Goodness Caleb Ibeh
+linkedin: https://linkedin.com/in/caleb-ibeh
+---
+
 # KQL Sentinel — Extreme Networks Switch Detections
 
 **Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)

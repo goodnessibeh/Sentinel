@@ -1,3 +1,10 @@
+---
+name: kql-sentinel-tables
+description: Complete table reference for all Microsoft Sentinel, Defender XDR, and Azure Monitor security log tables. Covers Windows Security (SecurityEvent, WindowsEvent), Entra ID (SigninLogs, AuditLogs), Microsoft 365 (OfficeActivity, Email tables), Defender for Endpoint (Device tables), Defender for Identity, Syslog, CommonSecurityLog (CEF), Azure platform tables, ThreatIntelligenceIndicator, UEBA, Sentinel internal tables, and all ASIM normalized parser functions with full schemas and field descriptions.
+author: Goodness Caleb Ibeh
+linkedin: https://linkedin.com/in/caleb-ibeh
+---
+
 # KQL Sentinel — Complete Table Reference
 
 **Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)

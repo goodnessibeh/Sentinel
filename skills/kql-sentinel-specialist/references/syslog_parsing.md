@@ -1,3 +1,10 @@
+---
+name: kql-sentinel-syslog-parsing
+description: Syslog, CEF, and custom log parsing patterns for Microsoft Sentinel. Covers Linux syslog format and facility/severity codes, SSH/sudo/firewall/cron/systemd parsing, CEF field mapping for Palo Alto, Fortinet, Check Point, Cisco ASA, and Trend Micro, custom log parsing with parse/extract/regex operators, key-value extraction, JSON/CSV parsing, multi-line log handling, and complete ASIM parser usage for Authentication, NetworkSession, DNS, ProcessCreate, FileEvent, WebSession, RegistryEvent, and AuditEvent schemas.
+author: Goodness Caleb Ibeh
+linkedin: https://linkedin.com/in/caleb-ibeh
+---
+
 # KQL Sentinel — Syslog, CEF & Custom Log Parsing
 
 **Author:** Goodness Caleb Ibeh — [LinkedIn](https://linkedin.com/in/caleb-ibeh)
