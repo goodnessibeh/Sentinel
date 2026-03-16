@@ -30,7 +30,11 @@ Syslog
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
 // Classify as remote vs local for risk assessment (remote is higher risk)
 | extend CommandType = iff(SyslogMessage has "Remote", "Remote", "Local")
-| project TimeGenerated, HostName, CommandType, SyslogMessage
+| extend
+    AlertTitle = "CLI Command Audit — Remote Commands",
+    AlertDescription = "CLI commands executed on the switch were audited, including remote and local sessions.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, CommandType, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
   // Classify as remote vs local for risk assessment (remote is higher risk)
   | extend CommandType = iff(SyslogMessage has "Remote", "Remote", "Local")
-  | project TimeGenerated, HostName, CommandType, SyslogMessage
+  | extend
+      AlertTitle = "CLI Command Audit — Remote Commands",
+      AlertDescription = "CLI commands executed on the switch were audited, including remote and local sessions.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, CommandType, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -82,6 +94,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   CommandType: CommandType
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

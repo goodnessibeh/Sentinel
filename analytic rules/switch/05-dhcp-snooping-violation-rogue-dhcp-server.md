@@ -28,7 +28,7 @@ Syslog
 | where SyslogMessage has "ipSecur.dhcpViol"
 // Extract port, VLAN, and source MAC for incident context
 | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 | extend SourceMAC = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | project TimeGenerated, HostName, Port, VLANName, SourceMAC, SyslogMessage
 // Aggregate violations per host per hour to identify persistent rogue servers
@@ -38,6 +38,10 @@ Syslog
     VLANs = make_set(VLANName, 5),
     MACs = make_set(SourceMAC, 10)
   by HostName, bin(TimeGenerated, 1h)
+| extend
+    AlertTitle = "DHCP Snooping Violation — Rogue DHCP Server",
+    AlertDescription = "DHCP snooping violation detected on an untrusted port, indicating a potential rogue DHCP server on the network.",
+    AlertSeverity = "High"
 | order by ViolationCount desc
 ```
 
@@ -77,7 +81,7 @@ query: |
   | where SyslogMessage has "ipSecur.dhcpViol"
   // Extract port, VLAN, and source MAC for incident context
   | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-  | extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+  | extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
   | extend SourceMAC = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
   | project TimeGenerated, HostName, Port, VLANName, SourceMAC, SyslogMessage
   // Aggregate violations per host per hour to identify persistent rogue servers
@@ -87,8 +91,16 @@ query: |
       VLANs = make_set(VLANName, 5),
       MACs = make_set(SourceMAC, 10)
     by HostName, bin(TimeGenerated, 1h)
+  | extend
+      AlertTitle = "DHCP Snooping Violation — Rogue DHCP Server",
+      AlertDescription = "DHCP snooping violation detected on an untrusted port, indicating a potential rogue DHCP server on the network.",
+      AlertSeverity = "High"
   | order by ViolationCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -97,6 +109,9 @@ entityMappings:
 customDetails:
   ViolationCount: ViolationCount
   VLANName: VLANName
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -39,7 +39,11 @@ CommonSecurityLog
   by DestinationUserName
 // Detection logic: flag users with sessions from more than one distinct IP
 | where DistinctIPs > 1
-| project DestinationUserName, SessionCount, DistinctIPs, IPList, Countries
+| extend
+    AlertTitle = "Concurrent VPN Sessions from Same User",
+    AlertDescription = "Single user account connected to SSL VPN from multiple distinct source IPs simultaneously, indicating potential credential compromise.",
+    AlertSeverity = "Medium"
+| project DestinationUserName, SessionCount, DistinctIPs, IPList, Countries, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -88,7 +92,15 @@ query: |
     by DestinationUserName
   // Detection logic: flag users with sessions from more than one distinct IP
   | where DistinctIPs > 1
-  | project DestinationUserName, SessionCount, DistinctIPs, IPList, Countries
+  | extend
+      AlertTitle = "Concurrent VPN Sessions from Same User",
+      AlertDescription = "Single user account connected to SSL VPN from multiple distinct source IPs simultaneously, indicating potential credential compromise.",
+      AlertSeverity = "Medium"
+  | project DestinationUserName, SessionCount, DistinctIPs, IPList, Countries, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -101,6 +113,9 @@ entityMappings:
 customDetails:
   SessionCount: SessionCount
   DistinctIPs: DistinctIPs
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

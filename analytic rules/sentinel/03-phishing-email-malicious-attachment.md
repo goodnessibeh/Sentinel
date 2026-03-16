@@ -32,8 +32,12 @@ EmailEvents
     | where TimeGenerated > ago(24h)
     | project NetworkMessageId, FileName, FileType, SHA256, MalwareFilterVerdict
   ) on NetworkMessageId
+| extend
+    AlertTitle = "Phishing Email Delivered with Malicious Attachment",
+    AlertDescription = "This detection identifies inbound emails that were successfully delivered to a user's mailbox despite being flagged as phishing or containing malware.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, SenderFromAddress, SenderFromDomain, RecipientEmailAddress,
-          Subject, FileName, FileType, SHA256, ThreatTypes, ThreatNames, DeliveryLocation
+          Subject, FileName, FileType, SHA256, ThreatTypes, ThreatNames, DeliveryLocation, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -78,8 +82,16 @@ query: |
       | where TimeGenerated > ago(24h)
       | project NetworkMessageId, FileName, FileType, SHA256, MalwareFilterVerdict
     ) on NetworkMessageId
+  | extend
+      AlertTitle = "Phishing Email Delivered with Malicious Attachment",
+      AlertDescription = "This detection identifies inbound emails that were successfully delivered to a user's mailbox despite being flagged as phishing or containing malware.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, SenderFromAddress, SenderFromDomain, RecipientEmailAddress,
-            Subject, FileName, FileType, SHA256, ThreatTypes, ThreatNames, DeliveryLocation
+            Subject, FileName, FileType, SHA256, ThreatTypes, ThreatNames, DeliveryLocation, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: MailMessage
     fieldMappings:
@@ -89,6 +101,10 @@ entityMappings:
     fieldMappings:
       - identifier: Name
         columnName: FileName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

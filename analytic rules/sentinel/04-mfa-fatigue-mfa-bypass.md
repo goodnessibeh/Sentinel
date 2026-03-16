@@ -43,7 +43,11 @@ SigninLogs
     | summarize SuccessTime = min(TimeGenerated) by UserPrincipalName
   ) on UserPrincipalName
 | extend MFABypassed = isnotnull(SuccessTime) and SuccessTime > LastAttempt
-| project UserPrincipalName, MFARequests, DistinctIPs, IPList, Apps, MFABypassed
+| extend
+    AlertTitle = "MFA Fatigue / MFA Bypass",
+    AlertDescription = "This detection identifies accounts receiving an unusually high number of MFA push requests in a short period, which is characteristic of MFA fatigue attacks.",
+    AlertSeverity = "High"
+| project UserPrincipalName, MFARequests, DistinctIPs, IPList, Apps, MFABypassed, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -96,7 +100,15 @@ query: |
       | summarize SuccessTime = min(TimeGenerated) by UserPrincipalName
     ) on UserPrincipalName
   | extend MFABypassed = isnotnull(SuccessTime) and SuccessTime > LastAttempt
-  | project UserPrincipalName, MFARequests, DistinctIPs, IPList, Apps, MFABypassed
+  | extend
+      AlertTitle = "MFA Fatigue / MFA Bypass",
+      AlertDescription = "This detection identifies accounts receiving an unusually high number of MFA push requests in a short period, which is characteristic of MFA fatigue attacks.",
+      AlertSeverity = "High"
+  | project UserPrincipalName, MFARequests, DistinctIPs, IPList, Apps, MFABypassed, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -106,6 +118,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: IPAddress
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

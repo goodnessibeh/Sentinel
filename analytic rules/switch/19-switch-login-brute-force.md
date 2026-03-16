@@ -44,7 +44,11 @@ Syslog
   by HostName, SourceIP
 // Detection logic: alert when failure count reaches brute force threshold
 | where FailCount >= threshold
-| project HostName, SourceIP, FailCount, Users, Methods, FirstAttempt, LastAttempt
+| extend
+    AlertTitle = "Switch Login Brute Force",
+    AlertDescription = "Multiple failed authentication attempts detected against the switch management interface from a single source IP.",
+    AlertSeverity = "High"
+| project HostName, SourceIP, FailCount, Users, Methods, FirstAttempt, LastAttempt, AlertTitle, AlertDescription, AlertSeverity
 | order by FailCount desc
 ```
 
@@ -98,9 +102,17 @@ query: |
     by HostName, SourceIP
   // Detection logic: alert when failure count reaches brute force threshold
   | where FailCount >= threshold
-  | project HostName, SourceIP, FailCount, Users, Methods, FirstAttempt, LastAttempt
+  | extend
+      AlertTitle = "Switch Login Brute Force",
+      AlertDescription = "Multiple failed authentication attempts detected against the switch management interface from a single source IP.",
+      AlertSeverity = "High"
+  | project HostName, SourceIP, FailCount, Users, Methods, FirstAttempt, LastAttempt, AlertTitle, AlertDescription, AlertSeverity
   | order by FailCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -119,6 +131,9 @@ customDetails:
   FailCount: FailCount
   Users: Users
   Methods: Methods
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

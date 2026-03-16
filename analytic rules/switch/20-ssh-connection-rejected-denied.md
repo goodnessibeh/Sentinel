@@ -33,6 +33,10 @@ Syslog
     RejectCount = count(),
     Switches = make_set(HostName, 10)
   by SourceIP, bin(TimeGenerated, 1h)
+| extend
+    AlertTitle = "SSH Connection Rejected/Denied",
+    AlertDescription = "SSH connection attempts to the switch management interface were rejected or denied, indicating potential reconnaissance or unauthorized access attempts.",
+    AlertSeverity = "Medium"
 | order by RejectCount desc
 ```
 
@@ -77,8 +81,16 @@ query: |
       RejectCount = count(),
       Switches = make_set(HostName, 10)
     by SourceIP, bin(TimeGenerated, 1h)
+  | extend
+      AlertTitle = "SSH Connection Rejected/Denied",
+      AlertDescription = "SSH connection attempts to the switch management interface were rejected or denied, indicating potential reconnaissance or unauthorized access attempts.",
+      AlertSeverity = "Medium"
   | order by RejectCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -87,6 +99,9 @@ entityMappings:
 customDetails:
   SourceIP: SourceIP
   RejectCount: RejectCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

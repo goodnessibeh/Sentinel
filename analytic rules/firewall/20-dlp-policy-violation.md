@@ -34,9 +34,13 @@ CommonSecurityLog
 | extend FilterType = extract("FTNTFGTfiltertype=([^;\\s]+)", 1, AdditionalExtensions)
 | extend Profile = extract("FTNTFGTprofile=([^;\\s]+)", 1, AdditionalExtensions)
 | extend FileName = extract("FTNTFGTfilename=([^;]+)", 1, AdditionalExtensions)
+| extend
+    AlertTitle = "DLP Policy Violation — Sensitive Data Exfiltration",
+    AlertDescription = "FortiGate DLP policy violation detected where sensitive data patterns were identified in outbound traffic, indicating potential data exposure.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationHostName,
           RequestURL, FileName, FilterType, DLPSeverity, Profile,
-          DeviceAction, DestinationUserName, ApplicationProtocol
+          DeviceAction, DestinationUserName, ApplicationProtocol, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -77,10 +81,18 @@ query: |
   | extend FilterType = extract("FTNTFGTfiltertype=([^;\\s]+)", 1, AdditionalExtensions)
   | extend Profile = extract("FTNTFGTprofile=([^;\\s]+)", 1, AdditionalExtensions)
   | extend FileName = extract("FTNTFGTfilename=([^;]+)", 1, AdditionalExtensions)
+  | extend
+      AlertTitle = "DLP Policy Violation — Sensitive Data Exfiltration",
+      AlertDescription = "FortiGate DLP policy violation detected where sensitive data patterns were identified in outbound traffic, indicating potential data exposure.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, DestinationIP, DestinationHostName,
             RequestURL, FileName, FilterType, DLPSeverity, Profile,
-            DeviceAction, DestinationUserName, ApplicationProtocol
+            DeviceAction, DestinationUserName, ApplicationProtocol, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -111,6 +123,9 @@ customDetails:
   DLPSeverity: DLPSeverity
   FilterType: FilterType
   Profile: Profile
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

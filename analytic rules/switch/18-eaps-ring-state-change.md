@@ -28,7 +28,11 @@ Syslog
 | where SyslogMessage has_any ("EAPS.State", "EAPS.Topology")
 // Parse severity and component from the EMS message
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-| project TimeGenerated, HostName, Severity, Component, SyslogMessage
+| extend
+    AlertTitle = "EAPS Ring State Change",
+    AlertDescription = "EAPS ring state change detected, indicating a potential ring break or instability that could lead to traffic loss or loops.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -68,9 +72,17 @@ query: |
   | where SyslogMessage has_any ("EAPS.State", "EAPS.Topology")
   // Parse severity and component from the EMS message
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | extend
+      AlertTitle = "EAPS Ring State Change",
+      AlertDescription = "EAPS ring state change detected, indicating a potential ring break or instability that could lead to traffic loss or loops.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -79,6 +91,9 @@ entityMappings:
 customDetails:
   Component: Component
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

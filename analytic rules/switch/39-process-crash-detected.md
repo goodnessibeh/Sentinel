@@ -30,7 +30,11 @@ Syslog
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
 // Extract the name of the crashed process for triage
 | extend ProcessName = extract(@"Process\s+(\S+)", 1, Rest)
-| project TimeGenerated, HostName, Severity, ProcessName, SyslogMessage
+| extend
+    AlertTitle = "Process Crash Detected",
+    AlertDescription = "A software process crashed or was unexpectedly stopped on the switch, potentially indicating exploitation or denial-of-service.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Severity, ProcessName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
   // Extract the name of the crashed process for triage
   | extend ProcessName = extract(@"Process\s+(\S+)", 1, Rest)
-  | project TimeGenerated, HostName, Severity, ProcessName, SyslogMessage
+  | extend
+      AlertTitle = "Process Crash Detected",
+      AlertDescription = "A software process crashed or was unexpectedly stopped on the switch, potentially indicating exploitation or denial-of-service.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Severity, ProcessName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -83,6 +95,9 @@ entityMappings:
 customDetails:
   ProcessName: ProcessName
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

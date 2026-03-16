@@ -35,6 +35,10 @@ CommonSecurityLog
     BlockCount = count(),
     Domains = make_set(DestinationHostName, 20)
   by SourceIP, CatDesc, DeviceAction
+| extend
+    AlertTitle = "DNS Query to Suspicious Category",
+    AlertDescription = "DNS queries blocked or redirected due to suspicious domain categories, suggesting persistent malware infection or ongoing phishing compromise.",
+    AlertSeverity = "Medium"
 | order by BlockCount desc
 ```
 
@@ -80,7 +84,15 @@ query: |
       BlockCount = count(),
       Domains = make_set(DestinationHostName, 20)
     by SourceIP, CatDesc, DeviceAction
+  | extend
+      AlertTitle = "DNS Query to Suspicious Category",
+      AlertDescription = "DNS queries blocked or redirected due to suspicious domain categories, suggesting persistent malware infection or ongoing phishing compromise.",
+      AlertSeverity = "Medium"
   | order by BlockCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -94,6 +106,9 @@ customDetails:
   DeviceAction: DeviceAction
   CatDesc: CatDesc
   BlockCount: BlockCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

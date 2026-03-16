@@ -34,6 +34,10 @@ CommonSecurityLog
     Targets = make_set(DestinationIP, 10),
     Ports = make_set(DestinationPort, 10)
   by SourceIP, DeviceName
+| extend
+    AlertTitle = "DoS Anomaly Detection Triggered",
+    AlertDescription = "FortiGate DoS anomaly detection triggered, indicating active denial-of-service attack patterns such as SYN floods, UDP floods, or ICMP floods.",
+    AlertSeverity = "High"
 | order by AnomalyCount desc
 ```
 
@@ -77,7 +81,15 @@ query: |
       Targets = make_set(DestinationIP, 10),
       Ports = make_set(DestinationPort, 10)
     by SourceIP, DeviceName
+  | extend
+      AlertTitle = "DoS Anomaly Detection Triggered",
+      AlertDescription = "FortiGate DoS anomaly detection triggered, indicating active denial-of-service attack patterns such as SYN floods, UDP floods, or ICMP floods.",
+      AlertSeverity = "High"
   | order by AnomalyCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -95,6 +107,9 @@ customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
   AnomalyCount: AnomalyCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

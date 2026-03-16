@@ -38,7 +38,11 @@ CommonSecurityLog
   by SourceIP, DeviceName
 // Threshold filter: only alert when failure count indicates brute force
 | where FailureCount >= threshold
-| project SourceIP, DeviceName, FailureCount, Users, FirstAttempt, LastAttempt
+| extend
+    AlertTitle = "Admin Login Failure — Brute Force",
+    AlertDescription = "Multiple failed administrative login attempts detected to FortiGate management interfaces, targeting the most critical security control in the network.",
+    AlertSeverity = "High"
+| project SourceIP, DeviceName, FailureCount, Users, FirstAttempt, LastAttempt, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -85,7 +89,15 @@ query: |
     by SourceIP, DeviceName
   // Threshold filter: only alert when failure count indicates brute force
   | where FailureCount >= threshold
-  | project SourceIP, DeviceName, FailureCount, Users, FirstAttempt, LastAttempt
+  | extend
+      AlertTitle = "Admin Login Failure — Brute Force",
+      AlertDescription = "Multiple failed administrative login attempts detected to FortiGate management interfaces, targeting the most critical security control in the network.",
+      AlertSeverity = "High"
+  | project SourceIP, DeviceName, FailureCount, Users, FirstAttempt, LastAttempt, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -102,6 +114,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   FailureCount: FailureCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

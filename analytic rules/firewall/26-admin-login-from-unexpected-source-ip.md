@@ -32,7 +32,11 @@ CommonSecurityLog
 | where DeviceEventClassID in ("32001", "0100032001")
 // Admin login success from outside expected management network ranges
 | where not(ipv4_is_in_any_range(SourceIP, AllowedAdminSubnets))
-| project TimeGenerated, SourceIP, DestinationUserName, DeviceName, Message
+| extend
+    AlertTitle = "Admin Login from Unexpected Source IP",
+    AlertDescription = "Successful administrative login detected from an IP address outside expected management network ranges, indicating potential credential theft or unauthorized access.",
+    AlertSeverity = "High"
+| project TimeGenerated, SourceIP, DestinationUserName, DeviceName, Message, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 **Tuning:** Replace `AllowedAdminSubnets` with your actual management network CIDRs.
@@ -75,7 +79,15 @@ query: |
   | where DeviceEventClassID in ("32001", "0100032001")
   // Admin login success from outside expected management network ranges
   | where not(ipv4_is_in_any_range(SourceIP, AllowedAdminSubnets))
-  | project TimeGenerated, SourceIP, DestinationUserName, DeviceName, Message
+  | extend
+      AlertTitle = "Admin Login from Unexpected Source IP",
+      AlertDescription = "Successful administrative login detected from an IP address outside expected management network ranges, indicating potential credential theft or unauthorized access.",
+      AlertSeverity = "High"
+  | project TimeGenerated, SourceIP, DestinationUserName, DeviceName, Message, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -92,6 +104,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

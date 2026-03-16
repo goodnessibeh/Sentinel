@@ -241,7 +241,7 @@ Syslog
 | extend FromPort = extract(@"from port\s+(\S+)", 1, SyslogMessage)
 | extend ToPort = extract(@"to port\s+(\S+)", 1, SyslogMessage)
 // Extract VLAN context
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 // Aggregate movement events per MAC in 15-minute windows to detect rapid flapping
 | summarize
     MoveCount = count(),
@@ -332,7 +332,7 @@ Syslog
 | where SyslogMessage has "ipSecur.dhcpViol"
 // Extract port, VLAN, and source MAC for incident context
 | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 | extend SourceMAC = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | project TimeGenerated, HostName, Port, VLANName, SourceMAC, SyslogMessage
 // Aggregate violations per host per hour to identify persistent rogue servers
@@ -463,7 +463,7 @@ Syslog
 | where SyslogMessage has "ipSecur.arpViol"
 // Extract port, VLAN, IP, and MAC for full incident context
 | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 | extend IPAddress = extract(@"IP\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
 | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | project TimeGenerated, HostName, Port, VLANName, IPAddress, MACAddress, SyslogMessage
@@ -1060,7 +1060,7 @@ Syslog
 // Extract the client MAC address, port, and VLAN context
 | extend MACAddress = extract(@"Station\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 | project TimeGenerated, HostName, MACAddress, Port, VLANName, SyslogMessage
 // Aggregate failures per MAC per hour to detect persistent attempts
 | summarize

@@ -36,7 +36,11 @@ DeviceNetworkEvents
 // Threshold: flag transfers exceeding 100MB
 | where TotalBytesSent > bytesThreshold
 | extend TotalMB = round(TotalBytesSent / 1048576.0, 2)
-| project TimeGenerated, DeviceName, RemoteIP, TotalMB, ConnectionCount, Ports, Processes
+| extend
+    AlertTitle = "Large Outbound Data Transfer",
+    AlertDescription = "This detection identifies hosts sending unusually large volumes of data to public IP addresses, which may indicate data exfiltration.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, DeviceName, RemoteIP, TotalMB, ConnectionCount, Ports, Processes, AlertTitle, AlertDescription, AlertSeverity
 | order by TotalMB desc
 ```
 
@@ -83,8 +87,16 @@ query: |
   // Threshold: flag transfers exceeding 100MB
   | where TotalBytesSent > bytesThreshold
   | extend TotalMB = round(TotalBytesSent / 1048576.0, 2)
-  | project TimeGenerated, DeviceName, RemoteIP, TotalMB, ConnectionCount, Ports, Processes
+  | extend
+      AlertTitle = "Large Outbound Data Transfer",
+      AlertDescription = "This detection identifies hosts sending unusually large volumes of data to public IP addresses, which may indicate data exfiltration.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, DeviceName, RemoteIP, TotalMB, ConnectionCount, Ports, Processes, AlertTitle, AlertDescription, AlertSeverity
   | order by TotalMB desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -94,6 +106,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: RemoteIP
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

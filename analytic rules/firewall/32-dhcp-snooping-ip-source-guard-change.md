@@ -34,7 +34,11 @@ CommonSecurityLog
     "trusted", "untrusted",
     "dhcp server", "dhcp relay"
   )
-| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+| extend
+    AlertTitle = "DHCP Snooping / IP Source Guard Configuration Change",
+    AlertDescription = "Changes to DHCP snooping, IP source guard, or ARP inspection detected, which can enable man-in-the-middle and IP spoofing attacks.",
+    AlertSeverity = "High"
+| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -78,8 +82,16 @@ query: |
       "trusted", "untrusted",
       "dhcp server", "dhcp relay"
     )
-  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | extend
+      AlertTitle = "DHCP Snooping / IP Source Guard Configuration Change",
+      AlertDescription = "Changes to DHCP snooping, IP source guard, or ARP inspection detected, which can enable man-in-the-middle and IP spoofing attacks.",
+      AlertSeverity = "High"
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -96,6 +108,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

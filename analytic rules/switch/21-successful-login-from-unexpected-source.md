@@ -38,7 +38,11 @@ Syslog
 | where isnotempty(SourceIP)
 // Detection logic: flag logins from IPs NOT in approved management subnets
 | where not(ipv4_is_in_any_range(SourceIP, AllowedMgmtSubnets))
-| project TimeGenerated, HostName, User, Method, SourceIP, SyslogMessage
+| extend
+    AlertTitle = "Successful Login from Unexpected Source",
+    AlertDescription = "Successful authentication to the switch management interface detected from an IP address outside the defined management subnets.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, User, Method, SourceIP, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 **Tuning:** Replace `AllowedMgmtSubnets` with your management network CIDRs.
@@ -87,8 +91,16 @@ query: |
   | where isnotempty(SourceIP)
   // Detection logic: flag logins from IPs NOT in approved management subnets
   | where not(ipv4_is_in_any_range(SourceIP, AllowedMgmtSubnets))
-  | project TimeGenerated, HostName, User, Method, SourceIP, SyslogMessage
+  | extend
+      AlertTitle = "Successful Login from Unexpected Source",
+      AlertDescription = "Successful authentication to the switch management interface detected from an IP address outside the defined management subnets.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, User, Method, SourceIP, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -106,6 +118,9 @@ customDetails:
   User: User
   Method: Method
   SourceIP: SourceIP
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

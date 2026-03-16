@@ -37,7 +37,11 @@ Syslog
     "create ospf", "delete ospf",
     "create bgp", "delete bgp"
   )
-| project TimeGenerated, HostName, SyslogMessage
+| extend
+    AlertTitle = "Routing Configuration Change",
+    AlertDescription = "Routing protocol configurations or static routes were modified on the switch, which may enable traffic interception or route hijacking.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -86,14 +90,26 @@ query: |
       "create ospf", "delete ospf",
       "create bgp", "delete bgp"
     )
-  | project TimeGenerated, HostName, SyslogMessage
+  | extend
+      AlertTitle = "Routing Configuration Change",
+      AlertDescription = "Routing protocol configurations or static routes were modified on the switch, which may enable traffic interception or route hijacking.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
       - identifier: HostName
         columnName: HostName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

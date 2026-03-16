@@ -22,11 +22,15 @@ SecurityEvent
 | where TimeGenerated > ago(24h)
 // Event ID 7045 = A new service was installed
 | where EventID == 7045
+| extend
+    AlertTitle = "New Windows Service Installed",
+    AlertDescription = "This detection identifies the installation of new Windows services (Event ID 7045) where the service binary path references suspicious locations or known LOLBins.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, Computer, ServiceName = tostring(EventData.ServiceName),
           ServiceFileName = tostring(EventData.ImagePath),
           ServiceType = tostring(EventData.ServiceType),
           ServiceStartType = tostring(EventData.StartType),
-          ServiceAccount = tostring(EventData.AccountName)
+          ServiceAccount = tostring(EventData.AccountName), AlertTitle, AlertDescription, AlertSeverity
 // Key filter: only flag services with suspicious binary paths or LOLBin references
 | where ServiceFileName has_any ("cmd", "powershell", "wscript", "cscript", "mshta",
           "\\Temp\\", "\\tmp\\", "\\AppData\\", "\\Users\\Public\\")
@@ -62,19 +66,31 @@ query: |
   | where TimeGenerated > ago(24h)
   // Event ID 7045 = A new service was installed
   | where EventID == 7045
+  | extend
+      AlertTitle = "New Windows Service Installed",
+      AlertDescription = "This detection identifies the installation of new Windows services (Event ID 7045) where the service binary path references suspicious locations or known LOLBins.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, Computer, ServiceName = tostring(EventData.ServiceName),
             ServiceFileName = tostring(EventData.ImagePath),
             ServiceType = tostring(EventData.ServiceType),
             ServiceStartType = tostring(EventData.StartType),
-            ServiceAccount = tostring(EventData.AccountName)
+            ServiceAccount = tostring(EventData.AccountName), AlertTitle, AlertDescription, AlertSeverity
   // Key filter: only flag services with suspicious binary paths or LOLBin references
   | where ServiceFileName has_any ("cmd", "powershell", "wscript", "cscript", "mshta",
             "\\Temp\\", "\\tmp\\", "\\AppData\\", "\\Users\\Public\\")
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
       - identifier: FullName
         columnName: Computer
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -30,7 +30,11 @@ Syslog
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
 // Extract the STP domain name for context
 | extend StpDomain = extract(@"\[([^\]]+)\]", 1, SyslogMessage)
-| project TimeGenerated, HostName, Severity, Component, StpDomain, SyslogMessage
+| extend
+    AlertTitle = "STP Topology Change Detected",
+    AlertDescription = "Spanning Tree Protocol topology change detected, which may indicate link failures, misconfigurations, or deliberate STP manipulation.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, Severity, Component, StpDomain, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
   // Extract the STP domain name for context
   | extend StpDomain = extract(@"\[([^\]]+)\]", 1, SyslogMessage)
-  | project TimeGenerated, HostName, Severity, Component, StpDomain, SyslogMessage
+  | extend
+      AlertTitle = "STP Topology Change Detected",
+      AlertDescription = "Spanning Tree Protocol topology change detected, which may indicate link failures, misconfigurations, or deliberate STP manipulation.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, Severity, Component, StpDomain, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -84,6 +96,9 @@ customDetails:
   Component: Component
   StpDomain: StpDomain
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

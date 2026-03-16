@@ -38,7 +38,11 @@ SigninLogs
 // Ensure the success came AFTER the failures (not before)
 | where LastSuccess > FirstFailure
 | extend TimeBetween = LastSuccess - FirstFailure
-| project UserPrincipalName, FailureCount, SuccessCount, IPAddresses, AppList, FailureReasons, TimeBetween
+| extend
+    AlertTitle = "Brute Force — Multiple Failed Sign-ins Followed by Success",
+    AlertDescription = "This detection identifies accounts that experience a high volume of failed sign-in attempts followed by a successful login within the same time window.",
+    AlertSeverity = "Medium"
+| project UserPrincipalName, FailureCount, SuccessCount, IPAddresses, AppList, FailureReasons, TimeBetween, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 **Tuning:** Adjust `threshold` based on environment. Exclude service accounts. Exclude known VPN/proxy IPs that cause legitimate failures.
@@ -88,7 +92,15 @@ query: |
   // Ensure the success came AFTER the failures (not before)
   | where LastSuccess > FirstFailure
   | extend TimeBetween = LastSuccess - FirstFailure
-  | project UserPrincipalName, FailureCount, SuccessCount, IPAddresses, AppList, FailureReasons, TimeBetween
+  | extend
+      AlertTitle = "Brute Force — Multiple Failed Sign-ins Followed by Success",
+      AlertDescription = "This detection identifies accounts that experience a high volume of failed sign-in attempts followed by a successful login within the same time window.",
+      AlertSeverity = "Medium"
+  | project UserPrincipalName, FailureCount, SuccessCount, IPAddresses, AppList, FailureReasons, TimeBetween, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -98,6 +110,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: IPAddress
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

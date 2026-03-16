@@ -39,7 +39,11 @@ CommonSecurityLog
   by SourceIP
 // Threshold filter: only alert when failures exceed the brute force threshold
 | where FailureCount >= threshold
-| project SourceIP, FailureCount, DistinctUsers, Users, Reasons, FirstAttempt, LastAttempt
+| extend
+    AlertTitle = "SSL VPN Brute Force — Multiple Failed Logins",
+    AlertDescription = "Multiple failed SSL VPN login attempts detected from a single source IP, indicating a potential credential stuffing or password spraying attack.",
+    AlertSeverity = "Medium"
+| project SourceIP, FailureCount, DistinctUsers, Users, Reasons, FirstAttempt, LastAttempt, AlertTitle, AlertDescription, AlertSeverity
 | order by FailureCount desc
 ```
 
@@ -89,8 +93,16 @@ query: |
     by SourceIP
   // Threshold filter: only alert when failures exceed the brute force threshold
   | where FailureCount >= threshold
-  | project SourceIP, FailureCount, DistinctUsers, Users, Reasons, FirstAttempt, LastAttempt
+  | extend
+      AlertTitle = "SSL VPN Brute Force — Multiple Failed Logins",
+      AlertDescription = "Multiple failed SSL VPN login attempts detected from a single source IP, indicating a potential credential stuffing or password spraying attack.",
+      AlertSeverity = "Medium"
+  | project SourceIP, FailureCount, DistinctUsers, Users, Reasons, FirstAttempt, LastAttempt, AlertTitle, AlertDescription, AlertSeverity
   | order by FailureCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -103,6 +115,9 @@ entityMappings:
 customDetails:
   FailureCount: FailureCount
   DistinctUsers: DistinctUsers
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -41,7 +41,11 @@ Syslog
     SyslogMessage has "configure", "MODIFIED",
     "CHANGED"
   )
-| project TimeGenerated, HostName, Action, SyslogMessage
+| extend
+    AlertTitle = "VLAN Configuration Change",
+    AlertDescription = "VLANs were created, deleted, or modified on the switch, which may break network segmentation or enable VLAN hopping attacks.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -94,9 +98,17 @@ query: |
       SyslogMessage has "configure", "MODIFIED",
       "CHANGED"
     )
-  | project TimeGenerated, HostName, Action, SyslogMessage
+  | extend
+      AlertTitle = "VLAN Configuration Change",
+      AlertDescription = "VLANs were created, deleted, or modified on the switch, which may break network segmentation or enable VLAN hopping attacks.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -104,6 +116,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   Action: Action
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

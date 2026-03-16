@@ -40,7 +40,11 @@ CommonSecurityLog
   by VPNTunnel, TunnelType, SourceIP
 // Threshold filter: only flag tunnels with excessive state changes (flapping)
 | where StateChanges >= flapThreshold
-| project VPNTunnel, TunnelType, SourceIP, StateChanges, UpCount, DownCount, FirstEvent, LastEvent
+| extend
+    AlertTitle = "VPN Tunnel Flapping — Repeated Up/Down",
+    AlertDescription = "VPN tunnel detected repeatedly going up and down, which may indicate a targeted DoS attack or attacker manipulating network infrastructure.",
+    AlertSeverity = "Medium"
+| project VPNTunnel, TunnelType, SourceIP, StateChanges, UpCount, DownCount, FirstEvent, LastEvent, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -91,7 +95,15 @@ query: |
     by VPNTunnel, TunnelType, SourceIP
   // Threshold filter: only flag tunnels with excessive state changes (flapping)
   | where StateChanges >= flapThreshold
-  | project VPNTunnel, TunnelType, SourceIP, StateChanges, UpCount, DownCount, FirstEvent, LastEvent
+  | extend
+      AlertTitle = "VPN Tunnel Flapping — Repeated Up/Down",
+      AlertDescription = "VPN tunnel detected repeatedly going up and down, which may indicate a targeted DoS attack or attacker manipulating network infrastructure.",
+      AlertSeverity = "Medium"
+  | project VPNTunnel, TunnelType, SourceIP, StateChanges, UpCount, DownCount, FirstEvent, LastEvent, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -103,6 +115,9 @@ customDetails:
   StateChanges: StateChanges
   UpCount: UpCount
   DownCount: DownCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

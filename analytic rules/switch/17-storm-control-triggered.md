@@ -29,7 +29,11 @@ Syslog
     or (SyslogMessage has "storm" and SyslogMessage has_any ("control", "detect", "threshold"))
 // Parse severity and component from the EMS message
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-| project TimeGenerated, HostName, Severity, Component, SyslogMessage
+| extend
+    AlertTitle = "Storm Control Triggered",
+    AlertDescription = "Storm control triggered on a switch port due to broadcast, multicast, or unknown unicast traffic exceeding the configured threshold.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -70,9 +74,17 @@ query: |
       or (SyslogMessage has "storm" and SyslogMessage has_any ("control", "detect", "threshold"))
   // Parse severity and component from the EMS message
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | extend
+      AlertTitle = "Storm Control Triggered",
+      AlertDescription = "Storm control triggered on a switch port due to broadcast, multicast, or unknown unicast traffic exceeding the configured threshold.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -81,6 +93,9 @@ entityMappings:
 customDetails:
   Component: Component
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

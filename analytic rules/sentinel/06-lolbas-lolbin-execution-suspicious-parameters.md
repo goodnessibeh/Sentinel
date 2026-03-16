@@ -44,9 +44,13 @@ DeviceProcessEvents
 | where FileName in~ (LOLBins)
 // Key filter: LOLBin must be used with suspicious parameters
 | where ProcessCommandLine has_any (SuspiciousPatterns)
+| extend
+    AlertTitle = "LOLBAS/LOLBin Execution with Suspicious Parameters",
+    AlertDescription = "This detection identifies the use of Living Off the Land Binaries (LOLBins) — legitimate Windows system binaries being abused with suspicious parameters to download, execute, or proxy malicious code.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, DeviceName, AccountName, FileName,
           ProcessCommandLine, InitiatingProcessFileName,
-          InitiatingProcessCommandLine, FolderPath
+          InitiatingProcessCommandLine, FolderPath, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -99,9 +103,17 @@ query: |
   | where FileName in~ (LOLBins)
   // Key filter: LOLBin must be used with suspicious parameters
   | where ProcessCommandLine has_any (SuspiciousPatterns)
+  | extend
+      AlertTitle = "LOLBAS/LOLBin Execution with Suspicious Parameters",
+      AlertDescription = "This detection identifies the use of Living Off the Land Binaries (LOLBins) — legitimate Windows system binaries being abused with suspicious parameters to download, execute, or proxy malicious code.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, DeviceName, AccountName, FileName,
             ProcessCommandLine, InitiatingProcessFileName,
-            InitiatingProcessCommandLine, FolderPath
+            InitiatingProcessCommandLine, FolderPath, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -115,6 +127,10 @@ entityMappings:
     fieldMappings:
       - identifier: CommandLine
         columnName: ProcessCommandLine
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

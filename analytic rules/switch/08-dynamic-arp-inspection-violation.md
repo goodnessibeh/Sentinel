@@ -29,7 +29,7 @@ Syslog
 | where SyslogMessage has "ipSecur.arpViol"
 // Extract port, VLAN, IP, and MAC for full incident context
 | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 | extend IPAddress = extract(@"IP\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
 | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | project TimeGenerated, HostName, Port, VLANName, IPAddress, MACAddress, SyslogMessage
@@ -40,6 +40,10 @@ Syslog
     IPs = make_set(IPAddress, 10),
     MACs = make_set(MACAddress, 10)
   by HostName, VLANName, bin(TimeGenerated, 1h)
+| extend
+    AlertTitle = "Dynamic ARP Inspection Violation",
+    AlertDescription = "ARP packets failed Dynamic ARP Inspection validation, indicating potential ARP spoofing or poisoning attacks.",
+    AlertSeverity = "High"
 | order by ViolationCount desc
 ```
 
@@ -79,7 +83,7 @@ query: |
   | where SyslogMessage has "ipSecur.arpViol"
   // Extract port, VLAN, IP, and MAC for full incident context
   | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-  | extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+  | extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
   | extend IPAddress = extract(@"IP\s+(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
   | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
   | project TimeGenerated, HostName, Port, VLANName, IPAddress, MACAddress, SyslogMessage
@@ -90,8 +94,16 @@ query: |
       IPs = make_set(IPAddress, 10),
       MACs = make_set(MACAddress, 10)
     by HostName, VLANName, bin(TimeGenerated, 1h)
+  | extend
+      AlertTitle = "Dynamic ARP Inspection Violation",
+      AlertDescription = "ARP packets failed Dynamic ARP Inspection validation, indicating potential ARP spoofing or poisoning attacks.",
+      AlertSeverity = "High"
   | order by ViolationCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -105,6 +117,9 @@ customDetails:
   VLANName: VLANName
   ViolationCount: ViolationCount
   IPAddress: IPAddress
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -33,7 +33,11 @@ DeviceLogonEvents
   by AccountName, RemoteIP
 // Threshold: flag accounts connecting to 3+ distinct hosts
 | where TargetCount >= threshold
-| project AccountName, RemoteIP, TargetCount, Targets, FirstSeen, LastSeen
+| extend
+    AlertTitle = "RDP from Single Account to Multiple Hosts",
+    AlertDescription = "This detection identifies a single user account establishing Remote Desktop Protocol sessions to multiple distinct hosts within a short timeframe.",
+    AlertSeverity = "Medium"
+| project AccountName, RemoteIP, TargetCount, Targets, FirstSeen, LastSeen, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -76,7 +80,15 @@ query: |
     by AccountName, RemoteIP
   // Threshold: flag accounts connecting to 3+ distinct hosts
   | where TargetCount >= threshold
-  | project AccountName, RemoteIP, TargetCount, Targets, FirstSeen, LastSeen
+  | extend
+      AlertTitle = "RDP from Single Account to Multiple Hosts",
+      AlertDescription = "This detection identifies a single user account establishing Remote Desktop Protocol sessions to multiple distinct hosts within a short timeframe.",
+      AlertSeverity = "Medium"
+  | project AccountName, RemoteIP, TargetCount, Targets, FirstSeen, LastSeen, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -86,6 +98,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: RemoteIP
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

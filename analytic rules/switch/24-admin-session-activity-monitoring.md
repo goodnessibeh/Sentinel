@@ -37,7 +37,11 @@ Syslog
   )
 // Extract the username associated with the session
 | extend User = extract(@"user\s+(\S+)", 1, SyslogMessage)
-| project TimeGenerated, HostName, User, EventType, Component, SyslogMessage
+| extend
+    AlertTitle = "Admin Session Activity Monitoring",
+    AlertDescription = "Administrative session lifecycle event detected on the switch management interface, providing audit trail of access.",
+    AlertSeverity = "Informational"
+| project TimeGenerated, HostName, User, EventType, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -85,9 +89,17 @@ query: |
     )
   // Extract the username associated with the session
   | extend User = extract(@"user\s+(\S+)", 1, SyslogMessage)
-  | project TimeGenerated, HostName, User, EventType, Component, SyslogMessage
+  | extend
+      AlertTitle = "Admin Session Activity Monitoring",
+      AlertDescription = "Administrative session lifecycle event detected on the switch management interface, providing audit trail of access.",
+      AlertSeverity = "Informational"
+  | project TimeGenerated, HostName, User, EventType, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -101,6 +113,9 @@ customDetails:
   User: User
   EventType: EventType
   Component: Component
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

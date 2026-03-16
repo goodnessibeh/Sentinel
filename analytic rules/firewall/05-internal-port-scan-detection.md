@@ -40,7 +40,11 @@ CommonSecurityLog
   by SourceIP
 // Alert if the source touched too many ports OR too many hosts
 | where DistinctPorts > portThreshold or DistinctHosts > hostThreshold
-| project SourceIP, DistinctPorts, DistinctHosts, PortList, HostList
+| extend
+    AlertTitle = "Internal Port Scan Detection",
+    AlertDescription = "Internal host detected scanning many ports or hosts, indicating potential lateral movement reconnaissance from a compromised machine.",
+    AlertSeverity = "Medium"
+| project SourceIP, DistinctPorts, DistinctHosts, PortList, HostList, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -91,7 +95,15 @@ query: |
     by SourceIP
   // Alert if the source touched too many ports OR too many hosts
   | where DistinctPorts > portThreshold or DistinctHosts > hostThreshold
-  | project SourceIP, DistinctPorts, DistinctHosts, PortList, HostList
+  | extend
+      AlertTitle = "Internal Port Scan Detection",
+      AlertDescription = "Internal host detected scanning many ports or hosts, indicating potential lateral movement reconnaissance from a compromised machine.",
+      AlertSeverity = "Medium"
+  | project SourceIP, DistinctPorts, DistinctHosts, PortList, HostList, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -100,6 +112,9 @@ entityMappings:
 customDetails:
   DistinctPorts: DistinctPorts
   DistinctHosts: DistinctHosts
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

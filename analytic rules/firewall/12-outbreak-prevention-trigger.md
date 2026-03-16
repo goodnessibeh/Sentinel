@@ -26,8 +26,12 @@ CommonSecurityLog
 | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
 // Filter for virus activity specifically related to outbreak prevention
 | where Activity has "virus" and Activity has "outbreak"
+| extend
+    AlertTitle = "Outbreak Prevention Trigger",
+    AlertDescription = "FortiGuard outbreak prevention event detected, indicating zero-day or rapidly spreading malware targeting the environment before traditional AV signatures are available.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, DestinationIP, DeviceAction,
-          ApplicationProtocol, Message, DestinationUserName
+          ApplicationProtocol, Message, DestinationUserName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -62,8 +66,16 @@ query: |
   | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
   // Filter for virus activity specifically related to outbreak prevention
   | where Activity has "virus" and Activity has "outbreak"
+  | extend
+      AlertTitle = "Outbreak Prevention Trigger",
+      AlertDescription = "FortiGuard outbreak prevention event detected, indicating zero-day or rapidly spreading malware targeting the environment before traditional AV signatures are available.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, DestinationIP, DeviceAction,
-            ApplicationProtocol, Message, DestinationUserName
+            ApplicationProtocol, Message, DestinationUserName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -80,6 +92,9 @@ entityMappings:
 customDetails:
   DeviceAction: DeviceAction
   ApplicationProtocol: ApplicationProtocol
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

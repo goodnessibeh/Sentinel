@@ -35,6 +35,10 @@ Syslog
   by HostName, bin(TimeGenerated, 5m)
 // Threshold: more than 10 drops in 5 minutes warrants investigation
 | where DropCount > 10
+| extend
+    AlertTitle = "IP Security Packet Drop",
+    AlertDescription = "The switch IP security feature is dropping packets that fail validation checks, indicating potential spoofing or injection attacks.",
+    AlertSeverity = "Medium"
 | order by DropCount desc
 ```
 
@@ -81,8 +85,16 @@ query: |
     by HostName, bin(TimeGenerated, 5m)
   // Threshold: more than 10 drops in 5 minutes warrants investigation
   | where DropCount > 10
+  | extend
+      AlertTitle = "IP Security Packet Drop",
+      AlertDescription = "The switch IP security feature is dropping packets that fail validation checks, indicating potential spoofing or injection attacks.",
+      AlertSeverity = "Medium"
   | order by DropCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -90,6 +102,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   DropCount: DropCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

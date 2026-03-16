@@ -31,9 +31,13 @@ DeviceProcessEvents
 | where isnotempty(EncodedPayload)
 // Decode the Base64 payload so analysts can read the actual command
 | extend DecodedCommand = base64_decode_tostring(EncodedPayload)
+| extend
+    AlertTitle = "Encoded PowerShell Command Execution",
+    AlertDescription = "This detection identifies PowerShell processes launched with Base64-encoded command-line arguments, a technique heavily used by attackers to obfuscate malicious payloads.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, DeviceName, AccountName,
           ProcessCommandLine, DecodedCommand,
-          InitiatingProcessFileName, InitiatingProcessCommandLine
+          InitiatingProcessFileName, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -73,9 +77,17 @@ query: |
   | where isnotempty(EncodedPayload)
   // Decode the Base64 payload so analysts can read the actual command
   | extend DecodedCommand = base64_decode_tostring(EncodedPayload)
+  | extend
+      AlertTitle = "Encoded PowerShell Command Execution",
+      AlertDescription = "This detection identifies PowerShell processes launched with Base64-encoded command-line arguments, a technique heavily used by attackers to obfuscate malicious payloads.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, DeviceName, AccountName,
             ProcessCommandLine, DecodedCommand,
-            InitiatingProcessFileName, InitiatingProcessCommandLine
+            InitiatingProcessFileName, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -89,6 +101,10 @@ entityMappings:
     fieldMappings:
       - identifier: CommandLine
         columnName: ProcessCommandLine
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

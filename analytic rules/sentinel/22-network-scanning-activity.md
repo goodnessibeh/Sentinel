@@ -34,8 +34,12 @@ DeviceNetworkEvents
   by DeviceName, LocalIP, InitiatingProcessFileName
 // Threshold: flag if port or host count exceeds normal levels
 | where DistinctPorts > portThreshold or DistinctHosts > hostThreshold
+| extend
+    AlertTitle = "Network Scanning Activity",
+    AlertDescription = "This detection identifies hosts that are connecting to an unusually high number of distinct ports or remote hosts in a short time window, which is characteristic of network scanning and reconnaissance.",
+    AlertSeverity = "Medium"
 | project DeviceName, LocalIP, InitiatingProcessFileName,
-          DistinctPorts, DistinctHosts, PortList, TargetHosts
+          DistinctPorts, DistinctHosts, PortList, TargetHosts, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -79,8 +83,16 @@ query: |
     by DeviceName, LocalIP, InitiatingProcessFileName
   // Threshold: flag if port or host count exceeds normal levels
   | where DistinctPorts > portThreshold or DistinctHosts > hostThreshold
+  | extend
+      AlertTitle = "Network Scanning Activity",
+      AlertDescription = "This detection identifies hosts that are connecting to an unusually high number of distinct ports or remote hosts in a short time window, which is characteristic of network scanning and reconnaissance.",
+      AlertSeverity = "Medium"
   | project DeviceName, LocalIP, InitiatingProcessFileName,
-            DistinctPorts, DistinctHosts, PortList, TargetHosts
+            DistinctPorts, DistinctHosts, PortList, TargetHosts, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -90,6 +102,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: LocalIP
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

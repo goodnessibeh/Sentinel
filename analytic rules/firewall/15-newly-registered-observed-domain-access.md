@@ -38,6 +38,10 @@ CommonSecurityLog
     AccessCount = count(),
     Users = make_set(DestinationUserName, 10)
   by DestinationHostName
+| extend
+    AlertTitle = "Newly Registered/Observed Domain Access",
+    AlertDescription = "Internal host accessed a newly registered or newly observed domain, which are disproportionately used for phishing and malware campaigns.",
+    AlertSeverity = "Low"
 | order by AccessCount desc
 ```
 
@@ -85,7 +89,15 @@ query: |
       AccessCount = count(),
       Users = make_set(DestinationUserName, 10)
     by DestinationHostName
+  | extend
+      AlertTitle = "Newly Registered/Observed Domain Access",
+      AlertDescription = "Internal host accessed a newly registered or newly observed domain, which are disproportionately used for phishing and malware campaigns.",
+      AlertSeverity = "Low"
   | order by AccessCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -103,6 +115,9 @@ customDetails:
   DeviceAction: DeviceAction
   AccessCount: AccessCount
   Category: Category
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

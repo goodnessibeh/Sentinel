@@ -36,7 +36,11 @@ DnsEvents
   by TLD, ClientIP, Computer
 // Threshold: high query count + long average subdomain = tunneling
 | where QueryCount > 100 and AvgSubdomainLen > 20
-| project Computer, ClientIP, TLD, QueryCount, AvgSubdomainLen, MaxSubdomainLen, UniqueSubs
+| extend
+    AlertTitle = "DNS Tunneling Detection",
+    AlertDescription = "This detection identifies potential DNS tunneling by finding DNS queries with abnormally long subdomain names, which is characteristic of data being encoded into DNS requests.",
+    AlertSeverity = "High"
+| project Computer, ClientIP, TLD, QueryCount, AvgSubdomainLen, MaxSubdomainLen, UniqueSubs, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -82,7 +86,15 @@ query: |
     by TLD, ClientIP, Computer
   // Threshold: high query count + long average subdomain = tunneling
   | where QueryCount > 100 and AvgSubdomainLen > 20
-  | project Computer, ClientIP, TLD, QueryCount, AvgSubdomainLen, MaxSubdomainLen, UniqueSubs
+  | extend
+      AlertTitle = "DNS Tunneling Detection",
+      AlertDescription = "This detection identifies potential DNS tunneling by finding DNS queries with abnormally long subdomain names, which is characteristic of data being encoded into DNS requests.",
+      AlertSeverity = "High"
+  | project Computer, ClientIP, TLD, QueryCount, AvgSubdomainLen, MaxSubdomainLen, UniqueSubs, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -92,6 +104,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: ClientIP
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

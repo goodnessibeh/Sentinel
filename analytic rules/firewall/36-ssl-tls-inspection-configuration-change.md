@@ -32,7 +32,11 @@ CommonSecurityLog
     "certificate-inspection", "ssl-exempt", "ssl exempt",
     "certificate", "ca-cert", "local-cert"
   )
-| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+| extend
+    AlertTitle = "SSL/TLS Inspection Configuration Change",
+    AlertDescription = "Changes to SSL/TLS inspection profiles or certificate configurations detected, which can create encrypted blind spots for malware and C2 communications.",
+    AlertSeverity = "High"
+| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -74,8 +78,16 @@ query: |
       "certificate-inspection", "ssl-exempt", "ssl exempt",
       "certificate", "ca-cert", "local-cert"
     )
-  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | extend
+      AlertTitle = "SSL/TLS Inspection Configuration Change",
+      AlertDescription = "Changes to SSL/TLS inspection profiles or certificate configurations detected, which can create encrypted blind spots for malware and C2 communications.",
+      AlertSeverity = "High"
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -92,6 +104,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

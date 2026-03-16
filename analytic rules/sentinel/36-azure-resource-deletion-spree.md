@@ -34,7 +34,11 @@ AzureActivity
   by Caller, CallerIpAddress
 // Threshold: flag accounts exceeding the deletion limit
 | where DeleteCount >= threshold
-| project Caller, CallerIpAddress, DeleteCount, ResourceTypes, Resources, ResourceGroups
+| extend
+    AlertTitle = "Azure Resource Deletion Spree",
+    AlertDescription = "This detection identifies accounts deleting a high number of Azure resources in a short time window, which indicates either a destructive attack or a compromised account performing sabotage.",
+    AlertSeverity = "High"
+| project Caller, CallerIpAddress, DeleteCount, ResourceTypes, Resources, ResourceGroups, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -79,12 +83,24 @@ query: |
     by Caller, CallerIpAddress
   // Threshold: flag accounts exceeding the deletion limit
   | where DeleteCount >= threshold
-  | project Caller, CallerIpAddress, DeleteCount, ResourceTypes, Resources, ResourceGroups
+  | extend
+      AlertTitle = "Azure Resource Deletion Spree",
+      AlertDescription = "This detection identifies accounts deleting a high number of Azure resources in a short time window, which indicates either a destructive attack or a compromised account performing sabotage.",
+      AlertSeverity = "High"
+  | project Caller, CallerIpAddress, DeleteCount, ResourceTypes, Resources, ResourceGroups, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: Caller
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

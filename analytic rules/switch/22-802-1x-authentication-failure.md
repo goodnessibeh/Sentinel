@@ -31,13 +31,17 @@ Syslog
 // Extract the client MAC address, port, and VLAN context
 | extend MACAddress = extract(@"Station\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 | project TimeGenerated, HostName, MACAddress, Port, VLANName, SyslogMessage
 // Aggregate failures per MAC per hour to detect persistent attempts
 | summarize
     FailCount = count(),
     Ports = make_set(Port, 10)
   by HostName, MACAddress, bin(TimeGenerated, 1h)
+| extend
+    AlertTitle = "802.1X Authentication Failure",
+    AlertDescription = "Failed 802.1X authentication attempts detected on switch ports, indicating unauthorized device connection attempts or misconfigured endpoints.",
+    AlertSeverity = "Medium"
 | order by FailCount desc
 ```
 
@@ -80,15 +84,23 @@ query: |
   // Extract the client MAC address, port, and VLAN context
   | extend MACAddress = extract(@"Station\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
   | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-  | extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+  | extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
   | project TimeGenerated, HostName, MACAddress, Port, VLANName, SyslogMessage
   // Aggregate failures per MAC per hour to detect persistent attempts
   | summarize
       FailCount = count(),
       Ports = make_set(Port, 10)
     by HostName, MACAddress, bin(TimeGenerated, 1h)
+  | extend
+      AlertTitle = "802.1X Authentication Failure",
+      AlertDescription = "Failed 802.1X authentication attempts detected on switch ports, indicating unauthorized device connection attempts or misconfigured endpoints.",
+      AlertSeverity = "Medium"
   | order by FailCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -97,6 +109,9 @@ entityMappings:
 customDetails:
   MACAddress: MACAddress
   FailCount: FailCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

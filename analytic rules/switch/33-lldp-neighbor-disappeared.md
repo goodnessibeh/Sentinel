@@ -34,6 +34,10 @@ Syslog
     LostNeighbors = count(),
     AffectedPorts = make_set(Port, 20)
   by HostName, bin(TimeGenerated, 30m)
+| extend
+    AlertTitle = "LLDP Neighbor Disappeared — Link Loss",
+    AlertDescription = "An LLDP neighbor was removed from the switch neighbor table, indicating a previously connected device is no longer reachable.",
+    AlertSeverity = "Medium"
 | order by LostNeighbors desc
 ```
 
@@ -79,8 +83,16 @@ query: |
       LostNeighbors = count(),
       AffectedPorts = make_set(Port, 20)
     by HostName, bin(TimeGenerated, 30m)
+  | extend
+      AlertTitle = "LLDP Neighbor Disappeared — Link Loss",
+      AlertDescription = "An LLDP neighbor was removed from the switch neighbor table, indicating a previously connected device is no longer reachable.",
+      AlertSeverity = "Medium"
   | order by LostNeighbors desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -88,6 +100,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   LostNeighbors: LostNeighbors
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

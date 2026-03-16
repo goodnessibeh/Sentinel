@@ -37,7 +37,11 @@ Syslog
   by HostName, bin(TimeGenerated, 2m)
 // Detection logic: alert when port-down count reaches threshold
 | where DownCount >= threshold
-| project TimeGenerated, HostName, DownCount, AffectedPorts
+| extend
+    AlertTitle = "Mass Port Down Event — Potential Cable/Switch Failure",
+    AlertDescription = "Multiple ports on the same switch went down simultaneously, indicating potential hardware failure or physical sabotage.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, DownCount, AffectedPorts, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -85,8 +89,16 @@ query: |
     by HostName, bin(TimeGenerated, 2m)
   // Detection logic: alert when port-down count reaches threshold
   | where DownCount >= threshold
-  | project TimeGenerated, HostName, DownCount, AffectedPorts
+  | extend
+      AlertTitle = "Mass Port Down Event — Potential Cable/Switch Failure",
+      AlertDescription = "Multiple ports on the same switch went down simultaneously, indicating potential hardware failure or physical sabotage.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, DownCount, AffectedPorts, AlertTitle, AlertDescription, AlertSeverity
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -94,6 +106,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   DownCount: DownCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

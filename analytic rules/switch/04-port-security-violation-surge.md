@@ -38,7 +38,11 @@ Syslog
   by HostName, bin(TimeGenerated, 5m)
 // Detection logic: only alert when violations exceed threshold
 | where ViolationCount > threshold
-| project TimeGenerated, HostName, ViolationCount, Components, Messages
+| extend
+    AlertTitle = "Port Security Violation Surge",
+    AlertDescription = "A surge of multiple port security violations detected on a single switch, indicating a potential coordinated attack.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, ViolationCount, Components, Messages, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -87,8 +91,16 @@ query: |
     by HostName, bin(TimeGenerated, 5m)
   // Detection logic: only alert when violations exceed threshold
   | where ViolationCount > threshold
-  | project TimeGenerated, HostName, ViolationCount, Components, Messages
+  | extend
+      AlertTitle = "Port Security Violation Surge",
+      AlertDescription = "A surge of multiple port security violations detected on a single switch, indicating a potential coordinated attack.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, ViolationCount, Components, Messages, AlertTitle, AlertDescription, AlertSeverity
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -96,6 +108,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   ViolationCount: ViolationCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -30,7 +30,11 @@ Syslog
 | extend Port = extract(@"[Pp]ort\s+(\S+)", 1, SyslogMessage)
 // Parse severity and component from the EMS message
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-| project TimeGenerated, HostName, Severity, Component, Port, SyslogMessage
+| extend
+    AlertTitle = "PoE Power Fault or Denial",
+    AlertDescription = "PoE fault, power denial, or overload condition detected on a switch port, potentially affecting powered devices.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, Severity, Component, Port, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   | extend Port = extract(@"[Pp]ort\s+(\S+)", 1, SyslogMessage)
   // Parse severity and component from the EMS message
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-  | project TimeGenerated, HostName, Severity, Component, Port, SyslogMessage
+  | extend
+      AlertTitle = "PoE Power Fault or Denial",
+      AlertDescription = "PoE fault, power denial, or overload condition detected on a switch port, potentially affecting powered devices.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, Severity, Component, Port, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -84,6 +96,9 @@ customDetails:
   Port: Port
   Component: Component
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

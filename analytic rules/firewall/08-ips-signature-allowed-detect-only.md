@@ -32,8 +32,12 @@ CommonSecurityLog
 | extend AttackName = extract("FTNTFGTattack=([^;]+)", 1, AdditionalExtensions)
 // Only surface critical and high severity detections that were allowed through
 | where ThreatLevel in ("critical", "high")
+| extend
+    AlertTitle = "IPS Signature Allowed (Detect-Only Mode)",
+    AlertDescription = "Critical or high severity IPS signature match allowed through without blocking, indicating a known attack reached its target due to detect-only configuration.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
-          AttackName, ThreatLevel, DeviceAction, Message
+          AttackName, ThreatLevel, DeviceAction, Message, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 **Tuning:** This detects IPS hits that were NOT blocked — review IPS profile to ensure blocking is enabled.
@@ -78,8 +82,16 @@ query: |
   | extend AttackName = extract("FTNTFGTattack=([^;]+)", 1, AdditionalExtensions)
   // Only surface critical and high severity detections that were allowed through
   | where ThreatLevel in ("critical", "high")
+  | extend
+      AlertTitle = "IPS Signature Allowed (Detect-Only Mode)",
+      AlertDescription = "Critical or high severity IPS signature match allowed through without blocking, indicating a known attack reached its target due to detect-only configuration.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
-            AttackName, ThreatLevel, DeviceAction, Message
+            AttackName, ThreatLevel, DeviceAction, Message, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -93,6 +105,9 @@ customDetails:
   DeviceAction: DeviceAction
   AttackName: AttackName
   ThreatLevel: ThreatLevel
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

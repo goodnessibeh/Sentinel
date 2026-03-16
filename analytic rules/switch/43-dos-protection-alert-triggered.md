@@ -28,7 +28,11 @@ Syslog
 | where SyslogMessage has_any ("dosprotect.Alert", "dosprotect.Action")
 // Parse severity and component from the EMS message
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-| project TimeGenerated, HostName, Severity, Component, SyslogMessage
+| extend
+    AlertTitle = "DoS Protection Alert Triggered",
+    AlertDescription = "The switch DoS protection feature triggered against suspected denial-of-service traffic, indicating an active attack.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -68,9 +72,17 @@ query: |
   | where SyslogMessage has_any ("dosprotect.Alert", "dosprotect.Action")
   // Parse severity and component from the EMS message
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | extend
+      AlertTitle = "DoS Protection Alert Triggered",
+      AlertDescription = "The switch DoS protection feature triggered against suspected denial-of-service traffic, indicating an active attack.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -79,6 +91,9 @@ entityMappings:
 customDetails:
   Component: Component
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -39,7 +39,11 @@ Syslog
   by HostName, Port
 // Detection logic: alert when total state changes exceed threshold
 | where FlipCount > threshold
-| project HostName, Port, FlipCount, UpCount, DownCount
+| extend
+    AlertTitle = "Excessive Port State Changes — Anomaly",
+    AlertDescription = "A switch port is undergoing an abnormally high number of link state transitions, indicating potential link-layer attack or hardware failure.",
+    AlertSeverity = "Medium"
+| project HostName, Port, FlipCount, UpCount, DownCount, AlertTitle, AlertDescription, AlertSeverity
 | order by FlipCount desc
 ```
 
@@ -90,9 +94,17 @@ query: |
     by HostName, Port
   // Detection logic: alert when total state changes exceed threshold
   | where FlipCount > threshold
-  | project HostName, Port, FlipCount, UpCount, DownCount
+  | extend
+      AlertTitle = "Excessive Port State Changes — Anomaly",
+      AlertDescription = "A switch port is undergoing an abnormally high number of link state transitions, indicating potential link-layer attack or hardware failure.",
+      AlertSeverity = "Medium"
+  | project HostName, Port, FlipCount, UpCount, DownCount, AlertTitle, AlertDescription, AlertSeverity
   | order by FlipCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -103,6 +115,9 @@ customDetails:
   FlipCount: FlipCount
   UpCount: UpCount
   DownCount: DownCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

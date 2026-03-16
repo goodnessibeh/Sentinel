@@ -52,8 +52,12 @@ SigninLogs
   )
 // Threshold: flag only if distance exceeds minimum
 | where DistanceKm > minDistance
+| extend
+    AlertTitle = "Impossible Travel — Sign-ins from Geographically Distant Locations",
+    AlertDescription = "This detection finds instances where the same user account authenticates from two geographically distant locations within a timeframe that makes physical travel impossible.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, UserPrincipalName, IPAddress, City, Country,
-          PrevIP, PrevCity, PrevCountry, TimeDelta, DistanceKm
+          PrevIP, PrevCity, PrevCountry, TimeDelta, DistanceKm, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 **Tuning:** Exclude VPN IPs. Adjust distance/time thresholds. Whitelist known travel patterns.
@@ -116,8 +120,16 @@ query: |
     )
   // Threshold: flag only if distance exceeds minimum
   | where DistanceKm > minDistance
+  | extend
+      AlertTitle = "Impossible Travel — Sign-ins from Geographically Distant Locations",
+      AlertDescription = "This detection finds instances where the same user account authenticates from two geographically distant locations within a timeframe that makes physical travel impossible.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, UserPrincipalName, IPAddress, City, Country,
-            PrevIP, PrevCity, PrevCountry, TimeDelta, DistanceKm
+            PrevIP, PrevCity, PrevCountry, TimeDelta, DistanceKm, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -131,6 +143,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: PrevIP
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

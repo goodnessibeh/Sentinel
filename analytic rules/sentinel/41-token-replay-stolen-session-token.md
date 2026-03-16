@@ -34,7 +34,11 @@ SigninLogs
   by UserPrincipalName, OriginalRequestId, bin(TimeGenerated, 1h)
 // Detection logic: same token from more than one IP = stolen token
 | where DistinctIPs > 1
-| project TimeGenerated, UserPrincipalName, DistinctIPs, IPList, Locations, AppList
+| extend
+    AlertTitle = "Token Replay / Stolen Session Token",
+    AlertDescription = "This detection identifies potential token replay attacks by finding the same authentication token being used from multiple distinct IP addresses within a short time window.",
+    AlertSeverity = "High"
+| project TimeGenerated, UserPrincipalName, DistinctIPs, IPList, Locations, AppList, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -79,12 +83,24 @@ query: |
     by UserPrincipalName, OriginalRequestId, bin(TimeGenerated, 1h)
   // Detection logic: same token from more than one IP = stolen token
   | where DistinctIPs > 1
-  | project TimeGenerated, UserPrincipalName, DistinctIPs, IPList, Locations, AppList
+  | extend
+      AlertTitle = "Token Replay / Stolen Session Token",
+      AlertDescription = "This detection identifies potential token replay attacks by finding the same authentication token being used from multiple distinct IP addresses within a short time window.",
+      AlertSeverity = "High"
+  | project TimeGenerated, UserPrincipalName, DistinctIPs, IPList, Locations, AppList, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: UserPrincipalName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -37,7 +37,11 @@ UserCreation
 | join kind=inner (RoleAssignment) on TargetUPN
 // Threshold: role must be assigned within the time window after creation
 | where (AssignmentTime - CreationTime) between (0s .. timeWindow)
-| project CreationTime, AssignmentTime, TargetUPN, Initiator, RoleName
+| extend
+    AlertTitle = "New Entra ID User Created with Immediate Role Assignment",
+    AlertDescription = "This detection correlates two events: the creation of a new Entra ID (Azure AD) user account followed by an immediate privileged role assignment within a short time window.",
+    AlertSeverity = "High"
+| project CreationTime, AssignmentTime, TargetUPN, Initiator, RoleName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -85,12 +89,24 @@ query: |
   | join kind=inner (RoleAssignment) on TargetUPN
   // Threshold: role must be assigned within the time window after creation
   | where (AssignmentTime - CreationTime) between (0s .. timeWindow)
-  | project CreationTime, AssignmentTime, TargetUPN, Initiator, RoleName
+  | extend
+      AlertTitle = "New Entra ID User Created with Immediate Role Assignment",
+      AlertDescription = "This detection correlates two events: the creation of a new Entra ID (Azure AD) user account followed by an immediate privileged role assignment within a short time window.",
+      AlertSeverity = "High"
+  | project CreationTime, AssignmentTime, TargetUPN, Initiator, RoleName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: TargetUPN
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

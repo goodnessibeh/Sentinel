@@ -28,7 +28,11 @@ AuditLogs
     tostring(InitiatedBy.app.displayName))
 | extend TargetApp = tostring(TargetResources[0].displayName)
 | extend TargetAppId = tostring(TargetResources[0].id)
-| project TimeGenerated, Initiator, OperationName, TargetApp, TargetAppId
+| extend
+    AlertTitle = "Suspicious Azure AD Application Registration",
+    AlertDescription = "This detection monitors for the creation of new Azure AD applications and the addition of credentials (secrets or certificates) to existing applications.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, Initiator, OperationName, TargetApp, TargetAppId, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -67,12 +71,24 @@ query: |
       tostring(InitiatedBy.app.displayName))
   | extend TargetApp = tostring(TargetResources[0].displayName)
   | extend TargetAppId = tostring(TargetResources[0].id)
-  | project TimeGenerated, Initiator, OperationName, TargetApp, TargetAppId
+  | extend
+      AlertTitle = "Suspicious Azure AD Application Registration",
+      AlertDescription = "This detection monitors for the creation of new Azure AD applications and the addition of credentials (secrets or certificates) to existing applications.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, Initiator, OperationName, TargetApp, TargetAppId, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: Initiator
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

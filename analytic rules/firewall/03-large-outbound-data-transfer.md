@@ -41,7 +41,11 @@ CommonSecurityLog
 // Only alert when the total bytes sent exceeds the exfiltration threshold
 | where TotalBytesSent > bytesThreshold
 | extend TotalMB = round(todouble(TotalBytesSent) / 1048576.0, 2)
-| project TimeGenerated, SourceIP, TotalMB, SessionCount, DistinctDestinations, Destinations, Ports
+| extend
+    AlertTitle = "Large Outbound Data Transfer — Exfiltration Indicator",
+    AlertDescription = "Unusually large volume of data sent from an internal host to an external destination, indicating potential data exfiltration.",
+    AlertSeverity = "High"
+| project TimeGenerated, SourceIP, TotalMB, SessionCount, DistinctDestinations, Destinations, Ports, AlertTitle, AlertDescription, AlertSeverity
 | order by TotalMB desc
 ```
 
@@ -94,8 +98,16 @@ query: |
   // Only alert when the total bytes sent exceeds the exfiltration threshold
   | where TotalBytesSent > bytesThreshold
   | extend TotalMB = round(todouble(TotalBytesSent) / 1048576.0, 2)
-  | project TimeGenerated, SourceIP, TotalMB, SessionCount, DistinctDestinations, Destinations, Ports
+  | extend
+      AlertTitle = "Large Outbound Data Transfer — Exfiltration Indicator",
+      AlertDescription = "Unusually large volume of data sent from an internal host to an external destination, indicating potential data exfiltration.",
+      AlertSeverity = "High"
+  | project TimeGenerated, SourceIP, TotalMB, SessionCount, DistinctDestinations, Destinations, Ports, AlertTitle, AlertDescription, AlertSeverity
   | order by TotalMB desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -105,6 +117,9 @@ customDetails:
   TotalMB: TotalMB
   SessionCount: SessionCount
   DistinctDestinations: DistinctDestinations
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

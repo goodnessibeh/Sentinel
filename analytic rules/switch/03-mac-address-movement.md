@@ -32,7 +32,7 @@ Syslog
 | extend FromPort = extract(@"from port\s+(\S+)", 1, SyslogMessage)
 | extend ToPort = extract(@"to port\s+(\S+)", 1, SyslogMessage)
 // Extract VLAN context
-| extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+| extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
 // Aggregate movement events per MAC in 15-minute windows to detect rapid flapping
 | summarize
     MoveCount = count(),
@@ -41,6 +41,10 @@ Syslog
   by HostName, MACAddress, VLANName, bin(TimeGenerated, 15m)
 // Threshold: more than 3 moves in 15 minutes is suspicious
 | where MoveCount > 3 // Frequent MAC movement is suspicious
+| extend
+    AlertTitle = "MAC Address Movement — Potential ARP Spoofing",
+    AlertDescription = "A MAC address is rapidly moving between switch ports, potentially indicating ARP spoofing or MAC spoofing attacks.",
+    AlertSeverity = "Medium"
 | order by MoveCount desc
 ```
 
@@ -84,7 +88,7 @@ query: |
   | extend FromPort = extract(@"from port\s+(\S+)", 1, SyslogMessage)
   | extend ToPort = extract(@"to port\s+(\S+)", 1, SyslogMessage)
   // Extract VLAN context
-  | extend VLANName = extract(@"VLAN\s+\"([^\"]+)\"", 1, SyslogMessage)
+  | extend VLANName = extract(@'VLAN\s+"([^"]+)"', 1, SyslogMessage)
   // Aggregate movement events per MAC in 15-minute windows to detect rapid flapping
   | summarize
       MoveCount = count(),
@@ -93,8 +97,16 @@ query: |
     by HostName, MACAddress, VLANName, bin(TimeGenerated, 15m)
   // Threshold: more than 3 moves in 15 minutes is suspicious
   | where MoveCount > 3 // Frequent MAC movement is suspicious
+  | extend
+      AlertTitle = "MAC Address Movement — Potential ARP Spoofing",
+      AlertDescription = "A MAC address is rapidly moving between switch ports, potentially indicating ARP spoofing or MAC spoofing attacks.",
+      AlertSeverity = "Medium"
   | order by MoveCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -104,6 +116,9 @@ customDetails:
   MACAddress: MACAddress
   VLANName: VLANName
   MoveCount: MoveCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

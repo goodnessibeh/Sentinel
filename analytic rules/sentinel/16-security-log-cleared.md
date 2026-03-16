@@ -32,9 +32,13 @@ SecurityEvent
     | where FileName =~ "wevtutil.exe"
     // Key filter: detect clear-log commands
     | where ProcessCommandLine has_any ("cl", "clear-log")
+| extend
+    AlertTitle = "Security Log Cleared",
+    AlertDescription = "This detection identifies when Windows Security event logs are cleared, either through the Event Log service (Event ID 1102) or via the wevtutil command-line tool.",
+    AlertSeverity = "High"
     | project TimeGenerated, Computer = DeviceName, SubjectAccount = AccountName,
               Activity = strcat("wevtutil ", ProcessCommandLine)
-)
+), AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -79,9 +83,17 @@ query: |
       | where FileName =~ "wevtutil.exe"
       // Key filter: detect clear-log commands
       | where ProcessCommandLine has_any ("cl", "clear-log")
+  | extend
+      AlertTitle = "Security Log Cleared",
+      AlertDescription = "This detection identifies when Windows Security event logs are cleared, either through the Event Log service (Event ID 1102) or via the wevtutil command-line tool.",
+      AlertSeverity = "High"
       | project TimeGenerated, Computer = DeviceName, SubjectAccount = AccountName,
                 Activity = strcat("wevtutil ", ProcessCommandLine)
-  )
+  ), AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -91,6 +103,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: Computer
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

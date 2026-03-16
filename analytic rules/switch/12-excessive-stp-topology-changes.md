@@ -35,7 +35,11 @@ Syslog
   by HostName, bin(TimeGenerated, 10m)
 // Detection logic: alert only when count exceeds threshold
 | where TCNCount > threshold
-| project TimeGenerated, HostName, TCNCount, Messages
+| extend
+    AlertTitle = "Excessive STP Topology Changes — Network Instability",
+    AlertDescription = "An unusually high number of STP topology changes detected on a switch, indicating potential Layer 2 attack or network instability.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, TCNCount, Messages, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -81,8 +85,16 @@ query: |
     by HostName, bin(TimeGenerated, 10m)
   // Detection logic: alert only when count exceeds threshold
   | where TCNCount > threshold
-  | project TimeGenerated, HostName, TCNCount, Messages
+  | extend
+      AlertTitle = "Excessive STP Topology Changes — Network Instability",
+      AlertDescription = "An unusually high number of STP topology changes detected on a switch, indicating potential Layer 2 attack or network instability.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, TCNCount, Messages, AlertTitle, AlertDescription, AlertSeverity
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -90,6 +102,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   TCNCount: TCNCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

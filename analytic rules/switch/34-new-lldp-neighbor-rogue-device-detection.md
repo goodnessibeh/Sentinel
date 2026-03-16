@@ -28,7 +28,11 @@ Syslog
 | where SyslogMessage has "LLDP.NbrAdd"
 // Extract the port where the new neighbor was detected
 | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-| project TimeGenerated, HostName, Port, SyslogMessage
+| extend
+    AlertTitle = "New LLDP Neighbor — Rogue Device Detection",
+    AlertDescription = "A new LLDP neighbor appeared on a switch port, which may indicate an unauthorized device being connected to the network.",
+    AlertSeverity = "Low"
+| project TimeGenerated, HostName, Port, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -70,9 +74,17 @@ query: |
   | where SyslogMessage has "LLDP.NbrAdd"
   // Extract the port where the new neighbor was detected
   | extend Port = extract(@"port\s+(\S+)", 1, SyslogMessage)
-  | project TimeGenerated, HostName, Port, SyslogMessage
+  | extend
+      AlertTitle = "New LLDP Neighbor — Rogue Device Detection",
+      AlertDescription = "A new LLDP neighbor appeared on a switch port, which may indicate an unauthorized device being connected to the network.",
+      AlertSeverity = "Low"
+  | project TimeGenerated, HostName, Port, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -80,6 +92,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   Port: Port
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -33,7 +33,11 @@ CommonSecurityLog
     "sflow", "netflow", "nflow",
     "diag sniff", "diagnose sniffer"
   )
-| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+| extend
+    AlertTitle = "Port Mirroring Configuration Change",
+    AlertDescription = "Changes to packet capture, traffic mirroring, or sniffer configuration detected, which could enable passive interception of all network traffic.",
+    AlertSeverity = "High"
+| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -79,8 +83,16 @@ query: |
       "sflow", "netflow", "nflow",
       "diag sniff", "diagnose sniffer"
     )
-  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | extend
+      AlertTitle = "Port Mirroring Configuration Change",
+      AlertDescription = "Changes to packet capture, traffic mirroring, or sniffer configuration detected, which could enable passive interception of all network traffic.",
+      AlertSeverity = "High"
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -97,6 +109,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

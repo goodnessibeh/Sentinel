@@ -31,7 +31,11 @@ Syslog
 | extend DuplicateIP = extract(@"(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
 | extend NeighborMAC = extract(@"Neighbor\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | extend Interface = extract(@"interface\s+(\S+)", 1, SyslogMessage)
-| project TimeGenerated, HostName, DuplicateIP, NeighborMAC, Interface, SyslogMessage
+| extend
+    AlertTitle = "Duplicate IP Address Detected (DAD)",
+    AlertDescription = "Two devices are claiming the same IP address, potentially indicating ARP spoofing or IP conflict.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, DuplicateIP, NeighborMAC, Interface, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -73,9 +77,17 @@ query: |
   | extend DuplicateIP = extract(@"(\d+\.\d+\.\d+\.\d+)", 1, SyslogMessage)
   | extend NeighborMAC = extract(@"Neighbor\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
   | extend Interface = extract(@"interface\s+(\S+)", 1, SyslogMessage)
-  | project TimeGenerated, HostName, DuplicateIP, NeighborMAC, Interface, SyslogMessage
+  | extend
+      AlertTitle = "Duplicate IP Address Detected (DAD)",
+      AlertDescription = "Two devices are claiming the same IP address, potentially indicating ARP spoofing or IP conflict.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, DuplicateIP, NeighborMAC, Interface, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -89,6 +101,9 @@ customDetails:
   DuplicateIP: DuplicateIP
   NeighborMAC: NeighborMAC
   Interface: Interface
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

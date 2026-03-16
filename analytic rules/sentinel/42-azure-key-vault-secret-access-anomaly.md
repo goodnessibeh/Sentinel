@@ -34,7 +34,11 @@ AzureDiagnostics
   by CallerIPAddress, Identity = identity_claim_upn_s, bin(TimeGenerated, 1h)
 // Threshold: flag high volume or high breadth of secret access
 | where AccessCount > 20 or DistinctSecrets > 5
-| project TimeGenerated, CallerIPAddress, Identity, AccessCount, DistinctSecrets, SecretNames
+| extend
+    AlertTitle = "Azure Key Vault Secret Access Anomaly",
+    AlertDescription = "This detection identifies anomalous access patterns to Azure Key Vault secrets, such as a single identity accessing an unusually high number of distinct secrets or making an excessive volume of secret retrieval calls.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, CallerIPAddress, Identity, AccessCount, DistinctSecrets, SecretNames, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -78,7 +82,15 @@ query: |
     by CallerIPAddress, Identity = identity_claim_upn_s, bin(TimeGenerated, 1h)
   // Threshold: flag high volume or high breadth of secret access
   | where AccessCount > 20 or DistinctSecrets > 5
-  | project TimeGenerated, CallerIPAddress, Identity, AccessCount, DistinctSecrets, SecretNames
+  | extend
+      AlertTitle = "Azure Key Vault Secret Access Anomaly",
+      AlertDescription = "This detection identifies anomalous access patterns to Azure Key Vault secrets, such as a single identity accessing an unusually high number of distinct secrets or making an excessive volume of secret retrieval calls.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, CallerIPAddress, Identity, AccessCount, DistinctSecrets, SecretNames, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -88,6 +100,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: CallerIPAddress
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

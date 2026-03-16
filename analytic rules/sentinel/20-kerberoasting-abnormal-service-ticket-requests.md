@@ -38,7 +38,11 @@ SecurityEvent
   by TargetAccount = Account, Computer, IpAddress
 // Threshold: requesting tickets for many distinct services is anomalous
 | where DistinctServices >= threshold
-| project TargetAccount, Computer, IpAddress, DistinctServices, ServiceNames
+| extend
+    AlertTitle = "Kerberoasting — Abnormal Service Ticket Requests",
+    AlertDescription = "This detection identifies Kerberoasting attacks by finding accounts that request an unusually high number of Kerberos service tickets (TGS) with weak RC4 encryption.",
+    AlertSeverity = "Medium"
+| project TargetAccount, Computer, IpAddress, DistinctServices, ServiceNames, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -86,7 +90,15 @@ query: |
     by TargetAccount = Account, Computer, IpAddress
   // Threshold: requesting tickets for many distinct services is anomalous
   | where DistinctServices >= threshold
-  | project TargetAccount, Computer, IpAddress, DistinctServices, ServiceNames
+  | extend
+      AlertTitle = "Kerberoasting — Abnormal Service Ticket Requests",
+      AlertDescription = "This detection identifies Kerberoasting attacks by finding accounts that request an unusually high number of Kerberos service tickets (TGS) with weak RC4 encryption.",
+      AlertSeverity = "Medium"
+  | project TargetAccount, Computer, IpAddress, DistinctServices, ServiceNames, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -96,6 +108,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: Computer
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

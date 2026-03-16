@@ -35,8 +35,12 @@ DeviceProcessEvents
     // Pattern 4: Direct LSASS access via rundll32
     (FileName =~ "rundll32.exe" and ProcessCommandLine has "lsass")
 )
+| extend
+    AlertTitle = "LSASS Memory Dump Indicators",
+    AlertDescription = "This detection identifies attempts to dump the memory of the LSASS (Local Security Authority Subsystem Service) process, which stores plaintext passwords, NTLM hashes, and Kerberos tickets in memory.",
+    AlertSeverity = "High"
 | project TimeGenerated, DeviceName, AccountName, FileName,
-          ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine
+          ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -81,8 +85,16 @@ query: |
       // Pattern 4: Direct LSASS access via rundll32
       (FileName =~ "rundll32.exe" and ProcessCommandLine has "lsass")
   )
+  | extend
+      AlertTitle = "LSASS Memory Dump Indicators",
+      AlertDescription = "This detection identifies attempts to dump the memory of the LSASS (Local Security Authority Subsystem Service) process, which stores plaintext passwords, NTLM hashes, and Kerberos tickets in memory.",
+      AlertSeverity = "High"
   | project TimeGenerated, DeviceName, AccountName, FileName,
-            ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine
+            ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -92,6 +104,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

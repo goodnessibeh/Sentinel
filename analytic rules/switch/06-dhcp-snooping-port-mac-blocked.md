@@ -30,7 +30,11 @@ Syslog
 | extend Port = extract(@"[Pp]ort\s+(\S+)", 1, SyslogMessage)
 | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
 | extend BlockDuration = extract(@"(\d+)\s+seconds", 1, SyslogMessage)
-| project TimeGenerated, HostName, Port, MACAddress, BlockDuration, SyslogMessage
+| extend
+    AlertTitle = "DHCP Snooping Port/MAC Blocked",
+    AlertDescription = "The switch DHCP snooping feature blocked a port or MAC address due to a security violation.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Port, MACAddress, BlockDuration, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   | extend Port = extract(@"[Pp]ort\s+(\S+)", 1, SyslogMessage)
   | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
   | extend BlockDuration = extract(@"(\d+)\s+seconds", 1, SyslogMessage)
-  | project TimeGenerated, HostName, Port, MACAddress, BlockDuration, SyslogMessage
+  | extend
+      AlertTitle = "DHCP Snooping Port/MAC Blocked",
+      AlertDescription = "The switch DHCP snooping feature blocked a port or MAC address due to a security violation.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Port, MACAddress, BlockDuration, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -84,6 +96,9 @@ customDetails:
   Port: Port
   MACAddress: MACAddress
   BlockDuration: BlockDuration
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

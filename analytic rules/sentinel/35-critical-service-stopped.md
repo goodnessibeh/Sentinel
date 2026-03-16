@@ -34,11 +34,15 @@ DeviceProcessEvents
 // Key filter: detect stop or force-kill commands
 | where ProcessCommandLine has "stop" or ProcessCommandLine has "/f"
 // Extract the service name from the command line
-| extend StoppedService = extract(@"(?:stop|/f)\s+[\"']?(\S+)", 1, ProcessCommandLine)
+| extend StoppedService = extract("(?:stop|/f)\\s+[\"']?(\\S+)", 1, ProcessCommandLine)
 // Only alert on critical services, not routine service management
 | where StoppedService in~ (CriticalServices)
+| extend
+    AlertTitle = "Critical Service Stopped",
+    AlertDescription = "This detection identifies attempts to stop critical Windows services such as security tools, databases, backup systems, and management infrastructure.",
+    AlertSeverity = "High"
 | project TimeGenerated, DeviceName, AccountName, FileName,
-          StoppedService, ProcessCommandLine, InitiatingProcessFileName
+          StoppedService, ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -82,11 +86,19 @@ query: |
   // Key filter: detect stop or force-kill commands
   | where ProcessCommandLine has "stop" or ProcessCommandLine has "/f"
   // Extract the service name from the command line
-  | extend StoppedService = extract(@"(?:stop|/f)\s+[\"']?(\S+)", 1, ProcessCommandLine)
+  | extend StoppedService = extract("(?:stop|/f)\\s+[\"']?(\\S+)", 1, ProcessCommandLine)
   // Only alert on critical services, not routine service management
   | where StoppedService in~ (CriticalServices)
+  | extend
+      AlertTitle = "Critical Service Stopped",
+      AlertDescription = "This detection identifies attempts to stop critical Windows services such as security tools, databases, backup systems, and management infrastructure.",
+      AlertSeverity = "High"
   | project TimeGenerated, DeviceName, AccountName, FileName,
-            StoppedService, ProcessCommandLine, InitiatingProcessFileName
+            StoppedService, ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -96,6 +108,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

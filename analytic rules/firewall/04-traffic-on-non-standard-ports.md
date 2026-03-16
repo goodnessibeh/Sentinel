@@ -43,6 +43,10 @@ CommonSecurityLog
   by DestinationIP, DestinationPort, ApplicationProtocol, bin(TimeGenerated, 1h)
 // Threshold filter: only flag ports with significant activity
 | where ConnectionCount > 20
+| extend
+    AlertTitle = "Traffic on Non-Standard Ports",
+    AlertDescription = "Allowed outbound connections detected on non-standard ports, which may indicate C2 channels, tunneling, or protocol abuse.",
+    AlertSeverity = "Low"
 | order by ConnectionCount desc
 ```
 
@@ -96,7 +100,15 @@ query: |
     by DestinationIP, DestinationPort, ApplicationProtocol, bin(TimeGenerated, 1h)
   // Threshold filter: only flag ports with significant activity
   | where ConnectionCount > 20
+  | extend
+      AlertTitle = "Traffic on Non-Standard Ports",
+      AlertDescription = "Allowed outbound connections detected on non-standard ports, which may indicate C2 channels, tunneling, or protocol abuse.",
+      AlertSeverity = "Low"
   | order by ConnectionCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -110,6 +122,9 @@ customDetails:
   DeviceAction: DeviceAction
   ConnectionCount: ConnectionCount
   ApplicationProtocol: ApplicationProtocol
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

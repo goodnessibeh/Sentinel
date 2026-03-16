@@ -35,6 +35,10 @@ SecurityEvent
   by SubjectAccount, Computer, IpAddress
 // Threshold: flag high-volume share access
 | where AccessCount > 10
+| extend
+    AlertTitle = "SMB/Named Pipe Lateral Movement",
+    AlertDescription = "This detection identifies access to administrative SMB shares (ADMIN$, C$, IPC$) from non-machine accounts, which is a common lateral movement technique.",
+    AlertSeverity = "Medium"
 ```
 
 ---
@@ -79,6 +83,14 @@ query: |
     by SubjectAccount, Computer, IpAddress
   // Threshold: flag high-volume share access
   | where AccessCount > 10
+  | extend
+      AlertTitle = "SMB/Named Pipe Lateral Movement",
+      AlertDescription = "This detection identifies access to administrative SMB shares (ADMIN$, C$, IPC$) from non-machine accounts, which is a common lateral movement technique.",
+      AlertSeverity = "Medium"
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -88,6 +100,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: Computer
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

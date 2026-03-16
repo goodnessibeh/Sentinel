@@ -36,8 +36,12 @@ DeviceNetworkEvents
 | join kind=leftouter (
     ThreatIntelligenceIndicator
     | where isnotempty(NetworkIP)
+| extend
+    AlertTitle = "Connection to Known Malicious IP (TI Match)",
+    AlertDescription = "This detection correlates outbound network connections against known malicious IP addresses from threat intelligence feeds.",
+    AlertSeverity = "High"
     | project NetworkIP, ThreatType, Description, Confidence, Tags
-  ) on $left.RemoteIP == $right.NetworkIP
+  ) on $left.RemoteIP == $right.NetworkIP, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -86,8 +90,16 @@ query: |
   | join kind=leftouter (
       ThreatIntelligenceIndicator
       | where isnotempty(NetworkIP)
+  | extend
+      AlertTitle = "Connection to Known Malicious IP (TI Match)",
+      AlertDescription = "This detection correlates outbound network connections against known malicious IP addresses from threat intelligence feeds.",
+      AlertSeverity = "High"
       | project NetworkIP, ThreatType, Description, Confidence, Tags
-    ) on $left.RemoteIP == $right.NetworkIP
+    ) on $left.RemoteIP == $right.NetworkIP, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -97,6 +109,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: RemoteIP
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

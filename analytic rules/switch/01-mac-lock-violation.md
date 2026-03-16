@@ -30,7 +30,11 @@ Syslog
 | parse SyslogMessage with * "<" Severity ":" Component ">" * "Port " Port " " Rest
 // Extract the offending MAC address using regex
 | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
-| project TimeGenerated, HostName, Severity, Port, MACAddress, SyslogMessage
+| extend
+    AlertTitle = "MAC Lock Violation — Unauthorized Device",
+    AlertDescription = "MAC lock violation detected on a switch port, indicating an unauthorized device connection attempt.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Severity, Port, MACAddress, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   | parse SyslogMessage with * "<" Severity ":" Component ">" * "Port " Port " " Rest
   // Extract the offending MAC address using regex
   | extend MACAddress = extract(@"MAC\s+([0-9a-fA-F:.-]+)", 1, SyslogMessage)
-  | project TimeGenerated, HostName, Severity, Port, MACAddress, SyslogMessage
+  | extend
+      AlertTitle = "MAC Lock Violation — Unauthorized Device",
+      AlertDescription = "MAC lock violation detected on a switch port, indicating an unauthorized device connection attempt.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Severity, Port, MACAddress, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -84,6 +96,9 @@ customDetails:
   Port: Port
   MACAddress: MACAddress
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

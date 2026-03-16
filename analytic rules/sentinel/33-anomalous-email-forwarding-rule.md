@@ -31,8 +31,12 @@ OfficeActivity
 | where isnotempty(ParamValue)
 // Extract the external domain for analyst review
 | extend ExternalDomain = extract(@"@(.+)$", 1, ParamValue)
+| extend
+    AlertTitle = "Anomalous Email Forwarding Rule",
+    AlertDescription = "This detection identifies the creation of email forwarding or redirect rules that send copies of emails to external addresses.",
+    AlertSeverity = "High"
 | project TimeGenerated, UserId, ClientIP, Operation, ParamName,
-          ForwardTarget = ParamValue, ExternalDomain
+          ForwardTarget = ParamValue, ExternalDomain, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -74,13 +78,25 @@ query: |
   | where isnotempty(ParamValue)
   // Extract the external domain for analyst review
   | extend ExternalDomain = extract(@"@(.+)$", 1, ParamValue)
+  | extend
+      AlertTitle = "Anomalous Email Forwarding Rule",
+      AlertDescription = "This detection identifies the creation of email forwarding or redirect rules that send copies of emails to external addresses.",
+      AlertSeverity = "High"
   | project TimeGenerated, UserId, ClientIP, Operation, ParamName,
-            ForwardTarget = ParamValue, ExternalDomain
+            ForwardTarget = ParamValue, ExternalDomain, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: UserId
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

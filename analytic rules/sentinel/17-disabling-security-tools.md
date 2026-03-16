@@ -37,8 +37,12 @@ DeviceProcessEvents
     // Detection pattern 3: Registry-based tamper protection bypass
     (FileName =~ "reg.exe" and ProcessCommandLine has "DisableAntiSpyware")
 )
+| extend
+    AlertTitle = "Disabling Security Tools",
+    AlertDescription = "This detection identifies attempts to disable or weaken security tools, particularly Windows Defender and related security services.",
+    AlertSeverity = "High"
 | project TimeGenerated, DeviceName, AccountName, FileName,
-          ProcessCommandLine, InitiatingProcessFileName
+          ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -85,8 +89,16 @@ query: |
       // Detection pattern 3: Registry-based tamper protection bypass
       (FileName =~ "reg.exe" and ProcessCommandLine has "DisableAntiSpyware")
   )
+  | extend
+      AlertTitle = "Disabling Security Tools",
+      AlertDescription = "This detection identifies attempts to disable or weaken security tools, particularly Windows Defender and related security services.",
+      AlertSeverity = "High"
   | project TimeGenerated, DeviceName, AccountName, FileName,
-            ProcessCommandLine, InitiatingProcessFileName
+            ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -96,6 +108,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

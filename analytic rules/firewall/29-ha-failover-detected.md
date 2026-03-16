@@ -27,7 +27,11 @@ CommonSecurityLog
 // Key filter: FortiGate event IDs for HA failover events, plus keyword fallback
 | where DeviceEventClassID in ("35013", "35016", "0108035013", "0108035016")
     or Message has "failover"
-| project TimeGenerated, DeviceName, DeviceExternalID, Message
+| extend
+    AlertTitle = "HA Failover Detected",
+    AlertDescription = "High availability failover detected where the standby FortiGate unit has taken over, indicating the primary firewall experienced a critical failure.",
+    AlertSeverity = "High"
+| project TimeGenerated, DeviceName, DeviceExternalID, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -66,8 +70,16 @@ query: |
   // Key filter: FortiGate event IDs for HA failover events, plus keyword fallback
   | where DeviceEventClassID in ("35013", "35016", "0108035013", "0108035016")
       or Message has "failover"
-  | project TimeGenerated, DeviceName, DeviceExternalID, Message
+  | extend
+      AlertTitle = "HA Failover Detected",
+      AlertDescription = "High availability failover detected where the standby FortiGate unit has taken over, indicating the primary firewall experienced a critical failure.",
+      AlertSeverity = "High"
+  | project TimeGenerated, DeviceName, DeviceExternalID, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -76,6 +88,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

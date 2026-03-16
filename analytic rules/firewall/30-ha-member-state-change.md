@@ -27,7 +27,11 @@ CommonSecurityLog
 // Key filter: FortiGate event IDs for HA member state changes, plus keyword fallback
 | where DeviceEventClassID in ("37892", "0105037892")
     or Message has "member state"
-| project TimeGenerated, DeviceName, DeviceExternalID, Message
+| extend
+    AlertTitle = "HA Member State Change",
+    AlertDescription = "HA cluster member state change detected, which can leave the network running on a single firewall without redundancy.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, DeviceName, DeviceExternalID, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -64,8 +68,16 @@ query: |
   // Key filter: FortiGate event IDs for HA member state changes, plus keyword fallback
   | where DeviceEventClassID in ("37892", "0105037892")
       or Message has "member state"
-  | project TimeGenerated, DeviceName, DeviceExternalID, Message
+  | extend
+      AlertTitle = "HA Member State Change",
+      AlertDescription = "HA cluster member state change detected, which can leave the network running on a single firewall without redundancy.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, DeviceName, DeviceExternalID, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -74,6 +86,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

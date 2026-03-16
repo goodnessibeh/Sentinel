@@ -37,7 +37,11 @@ CommonSecurityLog
   by SourceIP
 // Threshold filter: only flag sources with repeated IPS triggers
 | where HitCount >= threshold
-| project SourceIP, HitCount, DistinctAttacks, AttackList, Targets, Actions
+| extend
+    AlertTitle = "Repeated IPS Hits from Same Source — Persistent Attacker",
+    AlertDescription = "Single source IP triggered multiple IPS signatures in a short time window, indicating an active persistent attacker probing defenses.",
+    AlertSeverity = "High"
+| project SourceIP, HitCount, DistinctAttacks, AttackList, Targets, Actions, AlertTitle, AlertDescription, AlertSeverity
 | order by HitCount desc
 ```
 
@@ -86,8 +90,16 @@ query: |
     by SourceIP
   // Threshold filter: only flag sources with repeated IPS triggers
   | where HitCount >= threshold
-  | project SourceIP, HitCount, DistinctAttacks, AttackList, Targets, Actions
+  | extend
+      AlertTitle = "Repeated IPS Hits from Same Source — Persistent Attacker",
+      AlertDescription = "Single source IP triggered multiple IPS signatures in a short time window, indicating an active persistent attacker probing defenses.",
+      AlertSeverity = "High"
+  | project SourceIP, HitCount, DistinctAttacks, AttackList, Targets, Actions, AlertTitle, AlertDescription, AlertSeverity
   | order by HitCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -96,6 +108,9 @@ entityMappings:
 customDetails:
   HitCount: HitCount
   DistinctAttacks: DistinctAttacks
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

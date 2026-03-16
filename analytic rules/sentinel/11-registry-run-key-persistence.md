@@ -33,9 +33,13 @@ DeviceRegistryEvents
 | where ActionType == "RegistryValueSet"
 // Key filter: only Run key paths that enable auto-start persistence
 | where RegistryKey has_any (RunKeyPaths)
+| extend
+    AlertTitle = "Registry Run Key Persistence",
+    AlertDescription = "This detection monitors for modifications to Windows Registry Run keys, which are one of the oldest and most commonly used persistence mechanisms.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, DeviceName, AccountName,
           RegistryKey, RegistryValueName, RegistryValueData,
-          InitiatingProcessFileName, InitiatingProcessCommandLine
+          InitiatingProcessFileName, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -78,9 +82,17 @@ query: |
   | where ActionType == "RegistryValueSet"
   // Key filter: only Run key paths that enable auto-start persistence
   | where RegistryKey has_any (RunKeyPaths)
+  | extend
+      AlertTitle = "Registry Run Key Persistence",
+      AlertDescription = "This detection monitors for modifications to Windows Registry Run keys, which are one of the oldest and most commonly used persistence mechanisms.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, DeviceName, AccountName,
             RegistryKey, RegistryValueName, RegistryValueData,
-            InitiatingProcessFileName, InitiatingProcessCommandLine
+            InitiatingProcessFileName, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -90,6 +102,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

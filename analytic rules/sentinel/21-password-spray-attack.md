@@ -42,7 +42,11 @@ SigninLogs
     | where IPAddress == IPAddress and ResultType == 0
     | summarize count()
   )
-| project IPAddress, TargetedUsers, AttemptCount, UserList, Apps, FailureCodes
+| extend
+    AlertTitle = "Password Spray Attack",
+    AlertDescription = "This detection identifies password spray attacks by finding single IP addresses that attempt to authenticate against many different user accounts.",
+    AlertSeverity = "Medium"
+| project IPAddress, TargetedUsers, AttemptCount, UserList, Apps, FailureCodes, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -95,12 +99,24 @@ query: |
       | where IPAddress == IPAddress and ResultType == 0
       | summarize count()
     )
-  | project IPAddress, TargetedUsers, AttemptCount, UserList, Apps, FailureCodes
+  | extend
+      AlertTitle = "Password Spray Attack",
+      AlertDescription = "This detection identifies password spray attacks by finding single IP addresses that attempt to authenticate against many different user accounts.",
+      AlertSeverity = "Medium"
+  | project IPAddress, TargetedUsers, AttemptCount, UserList, Apps, FailureCodes, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
       - identifier: Address
         columnName: IPAddress
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

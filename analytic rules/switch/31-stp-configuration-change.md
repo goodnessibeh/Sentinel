@@ -44,7 +44,11 @@ Syslog
     SyslogMessage has "create", "CREATED",
     "CHANGED"
   )
-| project TimeGenerated, HostName, Action, SyslogMessage
+| extend
+    AlertTitle = "STP Configuration Change",
+    AlertDescription = "STP configuration was modified on the switch, which may weaken Layer 2 security controls or enable STP manipulation attacks.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -100,9 +104,17 @@ query: |
       SyslogMessage has "create", "CREATED",
       "CHANGED"
     )
-  | project TimeGenerated, HostName, Action, SyslogMessage
+  | extend
+      AlertTitle = "STP Configuration Change",
+      AlertDescription = "STP configuration was modified on the switch, which may weaken Layer 2 security controls or enable STP manipulation attacks.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -110,6 +122,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   Action: Action
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

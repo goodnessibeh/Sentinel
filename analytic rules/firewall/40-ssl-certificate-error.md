@@ -31,8 +31,12 @@ CommonSecurityLog
 // Extract certificate details for investigation context
 | extend CertCN = extract("FTNTFGTcertcn=([^;]+)", 1, AdditionalExtensions)
 | extend CertError = extract("FTNTFGTcerterror=([^;\\s]+)", 1, AdditionalExtensions)
+| extend
+    AlertTitle = "SSL Certificate Error — Potential MitM or Misconfiguration",
+    AlertDescription = "SSL certificate error detected during FortiGate SSL inspection, which can indicate an active man-in-the-middle attack or misconfigured server.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationHostName,
-          CertCN, CertError, DeviceAction, Message
+          CertCN, CertError, DeviceAction, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -73,9 +77,17 @@ query: |
   // Extract certificate details for investigation context
   | extend CertCN = extract("FTNTFGTcertcn=([^;]+)", 1, AdditionalExtensions)
   | extend CertError = extract("FTNTFGTcerterror=([^;\\s]+)", 1, AdditionalExtensions)
+  | extend
+      AlertTitle = "SSL Certificate Error — Potential MitM or Misconfiguration",
+      AlertDescription = "SSL certificate error detected during FortiGate SSL inspection, which can indicate an active man-in-the-middle attack or misconfigured server.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, SourceIP, DestinationIP, DestinationHostName,
-            CertCN, CertError, DeviceAction, Message
+            CertCN, CertError, DeviceAction, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -93,6 +105,9 @@ customDetails:
   DeviceAction: DeviceAction
   CertCN: CertCN
   CertError: CertError
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -36,8 +36,12 @@ CommonSecurityLog
 | extend SrcCountry = extract("FTNTFGTsrccountry=([^;\\s]+)", 1, AdditionalExtensions)
 // Filter out allowed countries and empty/reserved values
 | where SrcCountry !in (AllowedCountries) and isnotempty(SrcCountry) and SrcCountry != "Reserved"
+| extend
+    AlertTitle = "SSL VPN Login from Unusual Country",
+    AlertDescription = "Successful SSL VPN connection detected from a country not in the allowed list, indicating potential use of stolen credentials by an external threat actor.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, SourceIP, DestinationUserName, SrcCountry,
-          TunnelType, DeviceAction
+          TunnelType, DeviceAction, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 **Tuning:** Customize `AllowedCountries` for your organization's geographic footprint.
@@ -85,8 +89,16 @@ query: |
   | extend SrcCountry = extract("FTNTFGTsrccountry=([^;\\s]+)", 1, AdditionalExtensions)
   // Filter out allowed countries and empty/reserved values
   | where SrcCountry !in (AllowedCountries) and isnotempty(SrcCountry) and SrcCountry != "Reserved"
+  | extend
+      AlertTitle = "SSL VPN Login from Unusual Country",
+      AlertDescription = "Successful SSL VPN connection detected from a country not in the allowed list, indicating potential use of stolen credentials by an external threat actor.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, SourceIP, DestinationUserName, SrcCountry,
-            TunnelType, DeviceAction
+            TunnelType, DeviceAction, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -100,6 +112,9 @@ customDetails:
   DeviceAction: DeviceAction
   SrcCountry: SrcCountry
   TunnelType: TunnelType
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -48,9 +48,13 @@ DeviceFileEvents
      InitiatingProcessCommandLine, bin(TimeGenerated, 5m)
 // Threshold: 50+ renames in 5 minutes indicates active ransomware
 | where RenameCount >= renameThreshold
+| extend
+    AlertTitle = "Ransomware Indicators — Mass File Encryption",
+    AlertDescription = "This detection identifies potential ransomware activity by monitoring for mass file rename operations using known ransomware file extensions, as well as the creation of ransom note files.",
+    AlertSeverity = "High"
 | project TimeGenerated, DeviceName, AccountName, RenameCount,
           InitiatingProcessFileName, InitiatingProcessCommandLine,
-          Extensions, SampleFiles
+          Extensions, SampleFiles, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -108,9 +112,17 @@ query: |
        InitiatingProcessCommandLine, bin(TimeGenerated, 5m)
   // Threshold: 50+ renames in 5 minutes indicates active ransomware
   | where RenameCount >= renameThreshold
+  | extend
+      AlertTitle = "Ransomware Indicators — Mass File Encryption",
+      AlertDescription = "This detection identifies potential ransomware activity by monitoring for mass file rename operations using known ransomware file extensions, as well as the creation of ransom note files.",
+      AlertSeverity = "High"
   | project TimeGenerated, DeviceName, AccountName, RenameCount,
             InitiatingProcessFileName, InitiatingProcessCommandLine,
-            Extensions, SampleFiles
+            Extensions, SampleFiles, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -120,6 +132,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

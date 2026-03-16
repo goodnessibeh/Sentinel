@@ -46,7 +46,11 @@ Syslog
     SyslogMessage has "configure", "MODIFIED",
     "CHANGED"
   )
-| project TimeGenerated, HostName, Action, SyslogMessage
+| extend
+    AlertTitle = "DHCP Snooping Configuration Change",
+    AlertDescription = "DHCP snooping was enabled, disabled, or modified on the switch, potentially removing a critical Layer 2 security control.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -104,9 +108,17 @@ query: |
       SyslogMessage has "configure", "MODIFIED",
       "CHANGED"
     )
-  | project TimeGenerated, HostName, Action, SyslogMessage
+  | extend
+      AlertTitle = "DHCP Snooping Configuration Change",
+      AlertDescription = "DHCP snooping was enabled, disabled, or modified on the switch, potentially removing a critical Layer 2 security control.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -114,6 +126,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   Action: Action
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

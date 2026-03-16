@@ -28,7 +28,11 @@ CommonSecurityLog
 | where Activity has "system"
 // Key filter: FortiGate event ID for configuration changes
 | where DeviceEventClassID in ("32102", "0100032102")
-| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+| extend
+    AlertTitle = "Configuration Change Detected",
+    AlertDescription = "Configuration change detected on a FortiGate device, which could indicate unauthorized modification of security controls or policies.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -66,8 +70,16 @@ query: |
   | where Activity has "system"
   // Key filter: FortiGate event ID for configuration changes
   | where DeviceEventClassID in ("32102", "0100032102")
-  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | extend
+      AlertTitle = "Configuration Change Detected",
+      AlertDescription = "Configuration change detected on a FortiGate device, which could indicate unauthorized modification of security controls or policies.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -84,6 +96,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

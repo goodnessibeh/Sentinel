@@ -34,7 +34,11 @@ OfficeActivity
   by UserId, ClientIP
 // Threshold: flag users exceeding the download limit
 | where DownloadCount >= threshold
-| project UserId, ClientIP, DownloadCount, DistinctFiles, Sites, SampleFiles
+| extend
+    AlertTitle = "Mass File Download from SharePoint/OneDrive",
+    AlertDescription = "This detection identifies users downloading an unusually high number of files from SharePoint or OneDrive in a short time window.",
+    AlertSeverity = "Medium"
+| project UserId, ClientIP, DownloadCount, DistinctFiles, Sites, SampleFiles, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -79,12 +83,24 @@ query: |
     by UserId, ClientIP
   // Threshold: flag users exceeding the download limit
   | where DownloadCount >= threshold
-  | project UserId, ClientIP, DownloadCount, DistinctFiles, Sites, SampleFiles
+  | extend
+      AlertTitle = "Mass File Download from SharePoint/OneDrive",
+      AlertDescription = "This detection identifies users downloading an unusually high number of files from SharePoint or OneDrive in a short time window.",
+      AlertSeverity = "Medium"
+  | project UserId, ClientIP, DownloadCount, DistinctFiles, Sites, SampleFiles, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: UserId
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

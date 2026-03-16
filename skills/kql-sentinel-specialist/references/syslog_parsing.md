@@ -425,7 +425,7 @@ CommonSecurityLog
 | extend Emails = extract_all(@"\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})\b", SyslogMessage)
 
 // URL extraction
-| extend URLs = extract_all(@"(https?://[^\s\"'<>]+)", SyslogMessage)
+| extend URLs = extract_all(@'(https?://[^\s"<>]+)', SyslogMessage)
 
 // Domain extraction
 | extend Domain = extract(@"(?:https?://)?([a-zA-Z0-9][-a-zA-Z0-9]*(?:\.[a-zA-Z0-9][-a-zA-Z0-9]*)+)", 1, SyslogMessage)

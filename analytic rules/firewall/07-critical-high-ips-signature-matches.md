@@ -32,9 +32,13 @@ CommonSecurityLog
 | extend ThreatScore = toint(extract("FTNTFGTcrscore=([^;\\s]+)", 1, AdditionalExtensions))
 // Only surface critical and high severity detections
 | where ThreatLevel in ("critical", "high")
+| extend
+    AlertTitle = "Critical/High IPS Signature Matches",
+    AlertDescription = "IPS signature matches rated critical or high severity detected, representing active exploitation attempts against the network.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
           AttackName, AttackId, ThreatLevel, ThreatScore,
-          DeviceAction, ApplicationProtocol, Message
+          DeviceAction, ApplicationProtocol, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by ThreatScore desc
 ```
 
@@ -78,10 +82,18 @@ query: |
   | extend ThreatScore = toint(extract("FTNTFGTcrscore=([^;\\s]+)", 1, AdditionalExtensions))
   // Only surface critical and high severity detections
   | where ThreatLevel in ("critical", "high")
+  | extend
+      AlertTitle = "Critical/High IPS Signature Matches",
+      AlertDescription = "IPS signature matches rated critical or high severity detected, representing active exploitation attempts against the network.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
             AttackName, AttackId, ThreatLevel, ThreatScore,
-            DeviceAction, ApplicationProtocol, Message
+            DeviceAction, ApplicationProtocol, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by ThreatScore desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -97,6 +109,9 @@ customDetails:
   ThreatLevel: ThreatLevel
   ThreatScore: ThreatScore
   AttackId: AttackId
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

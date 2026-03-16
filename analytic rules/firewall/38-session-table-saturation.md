@@ -34,7 +34,11 @@ CommonSecurityLog
   by SourceIP, bin(TimeGenerated, 5m)
 // Threshold filter: only flag sources exceeding the session threshold
 | where ActiveSessions > sessionThreshold
-| project TimeGenerated, SourceIP, ActiveSessions, DistinctDests, DistinctPorts
+| extend
+    AlertTitle = "Session Table Saturation — Excessive Concurrent Sessions",
+    AlertDescription = "Single source IP creating an abnormally large number of concurrent sessions, which can exhaust the firewall session table and cause denial of service.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, SourceIP, ActiveSessions, DistinctDests, DistinctPorts, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -79,7 +83,15 @@ query: |
     by SourceIP, bin(TimeGenerated, 5m)
   // Threshold filter: only flag sources exceeding the session threshold
   | where ActiveSessions > sessionThreshold
-  | project TimeGenerated, SourceIP, ActiveSessions, DistinctDests, DistinctPorts
+  | extend
+      AlertTitle = "Session Table Saturation — Excessive Concurrent Sessions",
+      AlertDescription = "Single source IP creating an abnormally large number of concurrent sessions, which can exhaust the firewall session table and cause denial of service.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, SourceIP, ActiveSessions, DistinctDests, DistinctPorts, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -89,6 +101,9 @@ customDetails:
   ActiveSessions: ActiveSessions
   DistinctDests: DistinctDests
   DistinctPorts: DistinctPorts
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -32,8 +32,12 @@ CommonSecurityLog
     "sd-wan", "sdwan"
   ))
   or Activity has "router"
+| extend
+    AlertTitle = "Routing Configuration Change Detected",
+    AlertDescription = "Routing configuration change detected, which can silently redirect all network traffic through attacker-controlled infrastructure for interception.",
+    AlertSeverity = "High"
 | project TimeGenerated, DeviceName, DestinationUserName, SourceIP,
-          Message, Activity
+          Message, Activity, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -75,9 +79,17 @@ query: |
       "sd-wan", "sdwan"
     ))
     or Activity has "router"
+  | extend
+      AlertTitle = "Routing Configuration Change Detected",
+      AlertDescription = "Routing configuration change detected, which can silently redirect all network traffic through attacker-controlled infrastructure for interception.",
+      AlertSeverity = "High"
   | project TimeGenerated, DeviceName, DestinationUserName, SourceIP,
-            Message, Activity
+            Message, Activity, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -94,6 +106,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

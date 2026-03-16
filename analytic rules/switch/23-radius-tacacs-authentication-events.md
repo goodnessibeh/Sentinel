@@ -35,6 +35,10 @@ Syslog
     Users = make_set(User, 20),
     Switches = make_set(HostName, 20)
   by AuthServer, bin(TimeGenerated, 1h)
+| extend
+    AlertTitle = "RADIUS/TACACS+ Authentication Events",
+    AlertDescription = "Authentication events directed to external RADIUS or TACACS+ servers detected, useful for baseline monitoring and anomaly detection.",
+    AlertSeverity = "Low"
 ```
 
 ---
@@ -80,7 +84,15 @@ query: |
       Users = make_set(User, 20),
       Switches = make_set(HostName, 20)
     by AuthServer, bin(TimeGenerated, 1h)
+  | extend
+      AlertTitle = "RADIUS/TACACS+ Authentication Events",
+      AlertDescription = "Authentication events directed to external RADIUS or TACACS+ servers detected, useful for baseline monitoring and anomaly detection.",
+      AlertSeverity = "Low"
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -90,6 +102,9 @@ customDetails:
   AuthServer: AuthServer
   AuthAttempts: AuthAttempts
   Users: Users
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

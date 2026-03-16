@@ -38,7 +38,11 @@ AuditLogs
 | extend Permissions = tostring(ModifiedProp.newValue)
 // Key filter: only flag apps requesting sensitive/suspicious permissions
 | where Permissions has_any (SuspiciousPermissions)
-| project TimeGenerated, UserPrincipalName, AppName, AppId, Permissions
+| extend
+    AlertTitle = "Consent Phishing — Malicious OAuth App Grant",
+    AlertDescription = "This detection identifies users granting consent to OAuth applications that request sensitive permissions such as mail access, file access, or directory enumeration.",
+    AlertSeverity = "High"
+| project TimeGenerated, UserPrincipalName, AppName, AppId, Permissions, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -88,12 +92,24 @@ query: |
   | extend Permissions = tostring(ModifiedProp.newValue)
   // Key filter: only flag apps requesting sensitive/suspicious permissions
   | where Permissions has_any (SuspiciousPermissions)
-  | project TimeGenerated, UserPrincipalName, AppName, AppId, Permissions
+  | extend
+      AlertTitle = "Consent Phishing — Malicious OAuth App Grant",
+      AlertDescription = "This detection identifies users granting consent to OAuth applications that request sensitive permissions such as mail access, file access, or directory enumeration.",
+      AlertSeverity = "High"
+  | project TimeGenerated, UserPrincipalName, AppName, AppId, Permissions, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: UserPrincipalName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

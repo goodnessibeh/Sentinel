@@ -38,7 +38,11 @@ AuditLogs
     tostring(InitiatedBy.app.displayName))
 // Key filter: only alert on privileged roles, not low-impact ones
 | where RoleName in (PrivilegedRoles)
-| project TimeGenerated, TargetUPN, RoleName, Initiator
+| extend
+    AlertTitle = "User Added to Privileged Entra ID Role",
+    AlertDescription = "This detection monitors for users being assigned to high-privilege Entra ID (Azure AD) roles such as Global Administrator, Security Administrator, or Exchange Administrator.",
+    AlertSeverity = "High"
+| project TimeGenerated, TargetUPN, RoleName, Initiator, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -87,12 +91,24 @@ query: |
       tostring(InitiatedBy.app.displayName))
   // Key filter: only alert on privileged roles, not low-impact ones
   | where RoleName in (PrivilegedRoles)
-  | project TimeGenerated, TargetUPN, RoleName, Initiator
+  | extend
+      AlertTitle = "User Added to Privileged Entra ID Role",
+      AlertDescription = "This detection monitors for users being assigned to high-privilege Entra ID (Azure AD) roles such as Global Administrator, Security Administrator, or Exchange Administrator.",
+      AlertSeverity = "High"
+  | project TimeGenerated, TargetUPN, RoleName, Initiator, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: TargetUPN
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

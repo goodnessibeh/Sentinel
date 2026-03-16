@@ -25,8 +25,12 @@ DeviceProcessEvents
 | where InitiatingProcessFileName =~ "wsmprovhost.exe"  // WinRM host process
 // Exclude expected WinRM child processes
 | where FileName !in~ ("wsmprovhost.exe", "conhost.exe")
+| extend
+    AlertTitle = "PSRemoting / WinRM Lateral Movement",
+    AlertDescription = "This detection identifies processes spawned by the Windows Remote Management (WinRM) host process (wsmprovhost.exe), which indicates remote command execution via PowerShell Remoting.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, DeviceName, AccountName, FileName,
-          ProcessCommandLine, InitiatingProcessCommandLine
+          ProcessCommandLine, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
 // Aggregate to summarize remote execution activity per host
 | summarize
     CommandCount = count(),
@@ -67,14 +71,22 @@ query: |
   | where InitiatingProcessFileName =~ "wsmprovhost.exe"  // WinRM host process
   // Exclude expected WinRM child processes
   | where FileName !in~ ("wsmprovhost.exe", "conhost.exe")
+  | extend
+      AlertTitle = "PSRemoting / WinRM Lateral Movement",
+      AlertDescription = "This detection identifies processes spawned by the Windows Remote Management (WinRM) host process (wsmprovhost.exe), which indicates remote command execution via PowerShell Remoting.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, DeviceName, AccountName, FileName,
-            ProcessCommandLine, InitiatingProcessCommandLine
+            ProcessCommandLine, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
   // Aggregate to summarize remote execution activity per host
   | summarize
       CommandCount = count(),
       Processes = make_set(FileName, 10),
       Commands = make_set(ProcessCommandLine, 10)
     by DeviceName, AccountName, bin(TimeGenerated, 1h)
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -84,6 +96,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

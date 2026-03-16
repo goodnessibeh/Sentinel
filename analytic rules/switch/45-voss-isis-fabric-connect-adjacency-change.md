@@ -26,7 +26,11 @@ Syslog
 | where SyslogMessage has_any ("ISIS.AdjState", "ISIS.SPF", "SPBM")
 // Further filter to state disruption keywords
 | where SyslogMessage has_any ("Down", "down", "Lost", "lost", "Change", "change")
-| project TimeGenerated, HostName, SyslogMessage
+| extend
+    AlertTitle = "VOSS IS-IS/Fabric Connect Adjacency Change",
+    AlertDescription = "IS-IS adjacency state change or Fabric Connect event detected on a VOSS switch, potentially affecting fabric connectivity.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -64,14 +68,26 @@ query: |
   | where SyslogMessage has_any ("ISIS.AdjState", "ISIS.SPF", "SPBM")
   // Further filter to state disruption keywords
   | where SyslogMessage has_any ("Down", "down", "Lost", "lost", "Change", "change")
-  | project TimeGenerated, HostName, SyslogMessage
+  | extend
+      AlertTitle = "VOSS IS-IS/Fabric Connect Adjacency Change",
+      AlertDescription = "IS-IS adjacency state change or Fabric Connect event detected on a VOSS switch, potentially affecting fabric connectivity.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
       - identifier: HostName
         columnName: HostName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

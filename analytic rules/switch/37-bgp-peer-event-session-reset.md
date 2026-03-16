@@ -30,7 +30,11 @@ Syslog
 | where SyslogMessage has_any ("Down", "down", "Reset", "reset", "Idle", "idle", "cease")
 // Parse severity and component from the EMS message
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-| project TimeGenerated, HostName, Severity, Component, SyslogMessage
+| extend
+    AlertTitle = "BGP Peer Event — Session Reset",
+    AlertDescription = "BGP session reset or failure detected, which may indicate a targeted routing attack or infrastructure failure.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   | where SyslogMessage has_any ("Down", "down", "Reset", "reset", "Idle", "idle", "cease")
   // Parse severity and component from the EMS message
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | extend
+      AlertTitle = "BGP Peer Event — Session Reset",
+      AlertDescription = "BGP session reset or failure detected, which may indicate a targeted routing attack or infrastructure failure.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -83,6 +95,9 @@ entityMappings:
 customDetails:
   Component: Component
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

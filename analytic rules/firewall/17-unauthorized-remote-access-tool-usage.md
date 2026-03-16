@@ -35,8 +35,12 @@ CommonSecurityLog
 | extend AppName = extract("FTNTFGTapp=([^;]+)", 1, AdditionalExtensions)
 // Match against the list of known remote access tools
 | where AppName has_any (RemoteAccessApps)
+| extend
+    AlertTitle = "Unauthorized Remote Access Tool Usage",
+    AlertDescription = "Commercial remote access tool detected such as TeamViewer, AnyDesk, or similar software commonly abused by ransomware operators for persistent access.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, SourceIP, DestinationIP, AppName, DeviceAction,
-          DestinationUserName, DestinationHostName
+          DestinationUserName, DestinationHostName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -80,8 +84,16 @@ query: |
   | extend AppName = extract("FTNTFGTapp=([^;]+)", 1, AdditionalExtensions)
   // Match against the list of known remote access tools
   | where AppName has_any (RemoteAccessApps)
+  | extend
+      AlertTitle = "Unauthorized Remote Access Tool Usage",
+      AlertDescription = "Commercial remote access tool detected such as TeamViewer, AnyDesk, or similar software commonly abused by ransomware operators for persistent access.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, SourceIP, DestinationIP, AppName, DeviceAction,
-            DestinationUserName, DestinationHostName
+            DestinationUserName, DestinationHostName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -102,6 +114,9 @@ entityMappings:
 customDetails:
   DeviceAction: DeviceAction
   AppName: AppName
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

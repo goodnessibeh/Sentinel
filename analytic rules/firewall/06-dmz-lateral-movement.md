@@ -31,9 +31,13 @@ CommonSecurityLog
 // DMZ to LAN is unexpected — also flag DMZ-to-DMZ lateral movement between different hosts
 | where (SrcIntfRole == "dmz" and DstIntfRole == "lan")
    or (SrcIntfRole == "dmz" and DstIntfRole == "dmz" and SourceIP != DestinationIP)
+| extend
+    AlertTitle = "DMZ Lateral Movement — Unexpected Inter-Zone Traffic",
+    AlertDescription = "Allowed connections detected from DMZ hosts into the LAN or between DMZ hosts, violating network segmentation and suggesting a compromised public-facing server.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
           ApplicationProtocol, DeviceInboundInterface, DeviceOutboundInterface,
-          SrcIntfRole, DstIntfRole, SentBytes, ReceivedBytes
+          SrcIntfRole, DstIntfRole, SentBytes, ReceivedBytes, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -75,10 +79,18 @@ query: |
   // DMZ to LAN is unexpected — also flag DMZ-to-DMZ lateral movement between different hosts
   | where (SrcIntfRole == "dmz" and DstIntfRole == "lan")
      or (SrcIntfRole == "dmz" and DstIntfRole == "dmz" and SourceIP != DestinationIP)
+  | extend
+      AlertTitle = "DMZ Lateral Movement — Unexpected Inter-Zone Traffic",
+      AlertDescription = "Allowed connections detected from DMZ hosts into the LAN or between DMZ hosts, violating network segmentation and suggesting a compromised public-facing server.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
             ApplicationProtocol, DeviceInboundInterface, DeviceOutboundInterface,
-            SrcIntfRole, DstIntfRole, SentBytes, ReceivedBytes
+            SrcIntfRole, DstIntfRole, SentBytes, ReceivedBytes, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -92,6 +104,9 @@ customDetails:
   DeviceAction: DeviceAction
   SrcIntfRole: SrcIntfRole
   DstIntfRole: DstIntfRole
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

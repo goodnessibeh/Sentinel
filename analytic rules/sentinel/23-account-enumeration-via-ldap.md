@@ -32,7 +32,11 @@ IdentityQueryEvents
   by AccountUpn, DeviceName
 // Threshold: flag accounts with abnormally high query volumes
 | where QueryCount > 50
-| project AccountUpn, DeviceName, QueryCount, DistinctQueries, Queries
+| extend
+    AlertTitle = "Account Enumeration via LDAP",
+    AlertDescription = "This detection identifies accounts performing an unusually high volume of LDAP queries against the directory, which indicates account enumeration and Active Directory reconnaissance.",
+    AlertSeverity = "Low"
+| project AccountUpn, DeviceName, QueryCount, DistinctQueries, Queries, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -74,7 +78,15 @@ query: |
     by AccountUpn, DeviceName
   // Threshold: flag accounts with abnormally high query volumes
   | where QueryCount > 50
-  | project AccountUpn, DeviceName, QueryCount, DistinctQueries, Queries
+  | extend
+      AlertTitle = "Account Enumeration via LDAP",
+      AlertDescription = "This detection identifies accounts performing an unusually high volume of LDAP queries against the directory, which indicates account enumeration and Active Directory reconnaissance.",
+      AlertSeverity = "Low"
+  | project AccountUpn, DeviceName, QueryCount, DistinctQueries, Queries, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -84,6 +96,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: DeviceName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

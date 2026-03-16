@@ -31,9 +31,13 @@ CommonSecurityLog
 | extend DstCountry = extract("FTNTFGTdstcountry=([^;\\s]+)", 1, AdditionalExtensions)
 // Filter to only traffic destined for suspicious countries
 | where DstCountry in (SuspiciousCountries)
+| extend
+    AlertTitle = "Outbound Traffic to Known Malicious Countries",
+    AlertDescription = "Outbound connections detected from internal hosts to countries associated with state-sponsored threat actors or sanctioned regimes.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
           ApplicationProtocol, DstCountry, SentBytes, ReceivedBytes,
-          DestinationUserName
+          DestinationUserName, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -75,10 +79,18 @@ query: |
   | extend DstCountry = extract("FTNTFGTdstcountry=([^;\\s]+)", 1, AdditionalExtensions)
   // Filter to only traffic destined for suspicious countries
   | where DstCountry in (SuspiciousCountries)
+  | extend
+      AlertTitle = "Outbound Traffic to Known Malicious Countries",
+      AlertDescription = "Outbound connections detected from internal hosts to countries associated with state-sponsored threat actors or sanctioned regimes.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
             ApplicationProtocol, DstCountry, SentBytes, ReceivedBytes,
-            DestinationUserName
+            DestinationUserName, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -92,6 +104,9 @@ customDetails:
   DeviceAction: DeviceAction
   DstCountry: DstCountry
   ApplicationProtocol: ApplicationProtocol
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

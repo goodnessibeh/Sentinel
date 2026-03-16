@@ -26,7 +26,11 @@ Syslog
 | where Facility == "local7"
 // Key filter: match CDP neighbor timeout events
 | where SyslogMessage has "CDP.Timeout"
-| project TimeGenerated, HostName, SyslogMessage
+| extend
+    AlertTitle = "CDP Neighbor Timeout",
+    AlertDescription = "A CDP neighbor timed out on the switch, indicating a previously connected Cisco device is no longer reachable.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -64,14 +68,26 @@ query: |
   | where Facility == "local7"
   // Key filter: match CDP neighbor timeout events
   | where SyslogMessage has "CDP.Timeout"
-  | project TimeGenerated, HostName, SyslogMessage
+  | extend
+      AlertTitle = "CDP Neighbor Timeout",
+      AlertDescription = "A CDP neighbor timed out on the switch, indicating a previously connected Cisco device is no longer reachable.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
       - identifier: HostName
         columnName: HostName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

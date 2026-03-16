@@ -37,7 +37,11 @@ SecurityEvent
   by TargetUserName, TargetDomainName, IpAddress
 // Threshold: NTLM logons to 3+ distinct hosts from same source is suspicious
 | where DistinctHosts >= 3
-| project TargetUserName, TargetDomainName, IpAddress, DistinctHosts, HostList, LogonCount
+| extend
+    AlertTitle = "Pass-the-Hash Detection",
+    AlertDescription = "This detection identifies potential Pass-the-Hash attacks by finding NTLM network logons from a single account and IP address to multiple distinct hosts.",
+    AlertSeverity = "High"
+| project TargetUserName, TargetDomainName, IpAddress, DistinctHosts, HostList, LogonCount, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -84,7 +88,15 @@ query: |
     by TargetUserName, TargetDomainName, IpAddress
   // Threshold: NTLM logons to 3+ distinct hosts from same source is suspicious
   | where DistinctHosts >= 3
-  | project TargetUserName, TargetDomainName, IpAddress, DistinctHosts, HostList, LogonCount
+  | extend
+      AlertTitle = "Pass-the-Hash Detection",
+      AlertDescription = "This detection identifies potential Pass-the-Hash attacks by finding NTLM network logons from a single account and IP address to multiple distinct hosts.",
+      AlertSeverity = "High"
+  | project TargetUserName, TargetDomainName, IpAddress, DistinctHosts, HostList, LogonCount, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -94,6 +106,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: Computer
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

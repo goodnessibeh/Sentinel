@@ -28,8 +28,12 @@ DeviceProcessEvents
 // Parse out the task name and command for analyst review
 | parse ProcessCommandLine with * "/tn " TaskName " " *
 | parse ProcessCommandLine with * "/tr " TaskCommand " " *
+| extend
+    AlertTitle = "Scheduled Task Creation via Command Line",
+    AlertDescription = "This detection identifies the creation of scheduled tasks via the command line using schtasks.exe.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, DeviceName, AccountName, TaskName, TaskCommand,
-          ProcessCommandLine, InitiatingProcessFileName
+          ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -67,8 +71,16 @@ query: |
   // Parse out the task name and command for analyst review
   | parse ProcessCommandLine with * "/tn " TaskName " " *
   | parse ProcessCommandLine with * "/tr " TaskCommand " " *
+  | extend
+      AlertTitle = "Scheduled Task Creation via Command Line",
+      AlertDescription = "This detection identifies the creation of scheduled tasks via the command line using schtasks.exe.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, DeviceName, AccountName, TaskName, TaskCommand,
-            ProcessCommandLine, InitiatingProcessFileName
+            ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -78,6 +90,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

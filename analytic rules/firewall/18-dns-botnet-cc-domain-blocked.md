@@ -30,8 +30,12 @@ CommonSecurityLog
 // Extract the queried domain and associated botnet IP for context
 | extend QueriedDomain = DestinationHostName
 | extend BotnetIP = extract("FTNTFGTbotnetip=([^;\\s]+)", 1, AdditionalExtensions)
+| extend
+    AlertTitle = "DNS Botnet C&C Domain Blocked",
+    AlertDescription = "DNS query to a known botnet command-and-control domain was blocked, indicating the querying host is likely infected with malware.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, QueriedDomain, BotnetIP,
-          DeviceAction, Message
+          DeviceAction, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -72,9 +76,17 @@ query: |
   // Extract the queried domain and associated botnet IP for context
   | extend QueriedDomain = DestinationHostName
   | extend BotnetIP = extract("FTNTFGTbotnetip=([^;\\s]+)", 1, AdditionalExtensions)
+  | extend
+      AlertTitle = "DNS Botnet C&C Domain Blocked",
+      AlertDescription = "DNS query to a known botnet command-and-control domain was blocked, indicating the querying host is likely infected with malware.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, QueriedDomain, BotnetIP,
-            DeviceAction, Message
+            DeviceAction, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -87,6 +99,9 @@ entityMappings:
 customDetails:
   DeviceAction: DeviceAction
   BotnetIP: BotnetIP
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

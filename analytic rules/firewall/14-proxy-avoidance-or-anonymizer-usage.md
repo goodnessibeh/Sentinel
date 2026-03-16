@@ -39,6 +39,10 @@ CommonSecurityLog
     Domains = make_set(DestinationHostName, 20),
     Users = make_set(DestinationUserName, 10)
   by SourceIP, CatDesc
+| extend
+    AlertTitle = "Proxy Avoidance or Anonymizer Usage",
+    AlertDescription = "Internal user detected accessing proxy avoidance services, anonymizers, or similar evasion tools, indicating deliberate attempts to bypass security controls.",
+    AlertSeverity = "Medium"
 | order by AccessCount desc
 ```
 
@@ -87,7 +91,15 @@ query: |
       Domains = make_set(DestinationHostName, 20),
       Users = make_set(DestinationUserName, 10)
     by SourceIP, CatDesc
+  | extend
+      AlertTitle = "Proxy Avoidance or Anonymizer Usage",
+      AlertDescription = "Internal user detected accessing proxy avoidance services, anonymizers, or similar evasion tools, indicating deliberate attempts to bypass security controls.",
+      AlertSeverity = "Medium"
   | order by AccessCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -104,6 +116,9 @@ entityMappings:
 customDetails:
   AccessCount: AccessCount
   CatDesc: CatDesc
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

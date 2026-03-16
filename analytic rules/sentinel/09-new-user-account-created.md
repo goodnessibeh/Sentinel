@@ -23,8 +23,12 @@ SecurityEvent
 | where TimeGenerated > ago(24h)
 // Event ID 4720 = A user account was created
 | where EventID == 4720
+| extend
+    AlertTitle = "New User Account Created",
+    AlertDescription = "This detection monitors for the creation of new local user accounts on Windows systems via Security Event 4720.",
+    AlertSeverity = "Low"
 | project TimeGenerated, Computer, TargetAccount, TargetUserName, TargetDomainName,
-          SubjectAccount, SubjectUserName, SubjectDomainName
+          SubjectAccount, SubjectUserName, SubjectDomainName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -57,8 +61,16 @@ query: |
   | where TimeGenerated > ago(24h)
   // Event ID 4720 = A user account was created
   | where EventID == 4720
+  | extend
+      AlertTitle = "New User Account Created",
+      AlertDescription = "This detection monitors for the creation of new local user accounts on Windows systems via Security Event 4720.",
+      AlertSeverity = "Low"
   | project TimeGenerated, Computer, TargetAccount, TargetUserName, TargetDomainName,
-            SubjectAccount, SubjectUserName, SubjectDomainName
+            SubjectAccount, SubjectUserName, SubjectDomainName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -68,6 +80,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: Computer
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

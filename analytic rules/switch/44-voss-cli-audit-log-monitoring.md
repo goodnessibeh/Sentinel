@@ -24,7 +24,11 @@ Syslog
 | where TimeGenerated > ago(lookback)
 // Key filter: match VOSS CLI log entries (note: no Facility filter — VOSS may use different facilities)
 | where SyslogMessage has "CLILOG"
-| project TimeGenerated, HostName, SyslogMessage
+| extend
+    AlertTitle = "VOSS CLI Audit Log Monitoring",
+    AlertDescription = "CLI commands were executed on a VOSS switch, providing audit trail for forensic analysis and compliance.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -60,14 +64,26 @@ query: |
   | where TimeGenerated > ago(lookback)
   // Key filter: match VOSS CLI log entries (note: no Facility filter — VOSS may use different facilities)
   | where SyslogMessage has "CLILOG"
-  | project TimeGenerated, HostName, SyslogMessage
+  | extend
+      AlertTitle = "VOSS CLI Audit Log Monitoring",
+      AlertDescription = "CLI commands were executed on a VOSS switch, providing audit trail for forensic analysis and compliance.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
       - identifier: HostName
         columnName: HostName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

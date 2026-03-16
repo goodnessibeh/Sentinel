@@ -27,7 +27,11 @@ Syslog
 // Key filter: match STP root change events or related root keywords
 | where SyslogMessage has "STP.State.RootChg"
     or (SyslogMessage has "STP" and SyslogMessage has_any ("Root", "root bridge", "root change"))
-| project TimeGenerated, HostName, SyslogMessage
+| extend
+    AlertTitle = "STP Root Bridge Change — Potential Attack",
+    AlertDescription = "The root bridge for a Spanning Tree domain has changed, potentially indicating a Layer 2 man-in-the-middle attack.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -66,14 +70,26 @@ query: |
   // Key filter: match STP root change events or related root keywords
   | where SyslogMessage has "STP.State.RootChg"
       or (SyslogMessage has "STP" and SyslogMessage has_any ("Root", "root bridge", "root change"))
-  | project TimeGenerated, HostName, SyslogMessage
+  | extend
+      AlertTitle = "STP Root Bridge Change — Potential Attack",
+      AlertDescription = "The root bridge for a Spanning Tree domain has changed, potentially indicating a Layer 2 man-in-the-middle attack.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
       - identifier: HostName
         columnName: HostName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

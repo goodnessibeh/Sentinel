@@ -43,7 +43,11 @@ Syslog
   by HostName, bin(TimeGenerated, 15m)
 // Detection logic: alert when event count exceeds instability threshold
 | where EventCount > threshold
-| project TimeGenerated, HostName, EventCount, Protocols, Messages
+| extend
+    AlertTitle = "Routing Instability — Multiple Protocol Flaps",
+    AlertDescription = "Multiple routing protocol events occurred in rapid succession, indicating widespread routing instability or a targeted attack.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, EventCount, Protocols, Messages, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -97,8 +101,16 @@ query: |
     by HostName, bin(TimeGenerated, 15m)
   // Detection logic: alert when event count exceeds instability threshold
   | where EventCount > threshold
-  | project TimeGenerated, HostName, EventCount, Protocols, Messages
+  | extend
+      AlertTitle = "Routing Instability — Multiple Protocol Flaps",
+      AlertDescription = "Multiple routing protocol events occurred in rapid succession, indicating widespread routing instability or a targeted attack.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, EventCount, Protocols, Messages, AlertTitle, AlertDescription, AlertSeverity
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -106,6 +118,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   EventCount: EventCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

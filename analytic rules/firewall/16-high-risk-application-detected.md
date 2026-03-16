@@ -33,9 +33,13 @@ CommonSecurityLog
 | extend AppRisk = extract("FTNTFGTapprisk=([^;\\s]+)", 1, AdditionalExtensions)
 // Only surface critical and high risk applications
 | where AppRisk in ("critical", "high")
+| extend
+    AlertTitle = "High-Risk Application Detected (Tor, P2P, Tunneling)",
+    AlertDescription = "Critical or high-risk application detected by FortiGate application control, including Tor, P2P, or tunneling tools that can bypass security controls.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
           AppName, AppCat, AppRisk, DeviceAction,
-          DestinationUserName, DestinationHostName
+          DestinationUserName, DestinationHostName, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -77,10 +81,18 @@ query: |
   | extend AppRisk = extract("FTNTFGTapprisk=([^;\\s]+)", 1, AdditionalExtensions)
   // Only surface critical and high risk applications
   | where AppRisk in ("critical", "high")
+  | extend
+      AlertTitle = "High-Risk Application Detected (Tor, P2P, Tunneling)",
+      AlertDescription = "Critical or high-risk application detected by FortiGate application control, including Tor, P2P, or tunneling tools that can bypass security controls.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, DestinationIP, DestinationPort,
             AppName, AppCat, AppRisk, DeviceAction,
-            DestinationUserName, DestinationHostName
+            DestinationUserName, DestinationHostName, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -103,6 +115,9 @@ customDetails:
   AppName: AppName
   AppCat: AppCat
   AppRisk: AppRisk
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

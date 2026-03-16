@@ -44,8 +44,12 @@ DeviceNetworkEvents
 // Detection logic: low standard deviation = regular interval = beaconing
 | where StdevDelta < AvgDelta * 0.2  // <20% variation
 | where AvgDelta between (10 .. 3600)  // 10s to 1h intervals
+| extend
+    AlertTitle = "Beaconing Detection — Regular Interval Callbacks",
+    AlertDescription = "This detection identifies network beaconing behavior by analyzing the regularity of outbound connections from a host to a specific remote IP.",
+    AlertSeverity = "Medium"
 | project DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName,
-          ConnectionCount, AvgDelta, StdevDelta
+          ConnectionCount, AvgDelta, StdevDelta, AlertTitle, AlertDescription, AlertSeverity
 | order by StdevDelta asc
 ```
 
@@ -100,9 +104,17 @@ query: |
   // Detection logic: low standard deviation = regular interval = beaconing
   | where StdevDelta < AvgDelta * 0.2  // <20% variation
   | where AvgDelta between (10 .. 3600)  // 10s to 1h intervals
+  | extend
+      AlertTitle = "Beaconing Detection — Regular Interval Callbacks",
+      AlertDescription = "This detection identifies network beaconing behavior by analyzing the regularity of outbound connections from a host to a specific remote IP.",
+      AlertSeverity = "Medium"
   | project DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName,
-            ConnectionCount, AvgDelta, StdevDelta
+            ConnectionCount, AvgDelta, StdevDelta, AlertTitle, AlertDescription, AlertSeverity
   | order by StdevDelta asc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -112,6 +124,10 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: RemoteIP
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

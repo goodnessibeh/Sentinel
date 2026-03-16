@@ -28,8 +28,12 @@ CommonSecurityLog
 | where Activity has "system"
 // Key filter: look for firmware-related messages including upgrades and downgrades
 | where Message has "firmware" and Message has_any ("upgraded", "upgrade", "downgrade")
+| extend
+    AlertTitle = "Firmware Upgrade Event",
+    AlertDescription = "Firmware upgrade or downgrade detected on a FortiGate device, which must be validated against the change management record.",
+    AlertSeverity = "Informational"
 | project TimeGenerated, DeviceName, DestinationUserName, SourceIP,
-          Message, DeviceVersion
+          Message, DeviceVersion, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -66,8 +70,16 @@ query: |
   | where Activity has "system"
   // Key filter: look for firmware-related messages including upgrades and downgrades
   | where Message has "firmware" and Message has_any ("upgraded", "upgrade", "downgrade")
+  | extend
+      AlertTitle = "Firmware Upgrade Event",
+      AlertDescription = "Firmware upgrade or downgrade detected on a FortiGate device, which must be validated against the change management record.",
+      AlertSeverity = "Informational"
   | project TimeGenerated, DeviceName, DestinationUserName, SourceIP,
-            Message, DeviceVersion
+            Message, DeviceVersion, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -84,6 +96,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceVersion: DeviceVersion
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

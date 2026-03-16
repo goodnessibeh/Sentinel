@@ -35,7 +35,11 @@ CommonSecurityLog
   by SourceIP, bin(TimeGenerated, 5m)
 // Threshold filter: only alert when deny count exceeds the baseline
 | where DenyCount > threshold
-| project TimeGenerated, SourceIP, DenyCount, DistinctPorts, DistinctTargets, TargetPorts, TargetIPs
+| extend
+    AlertTitle = "Denied Traffic Spike — Possible Reconnaissance",
+    AlertDescription = "Spike in denied traffic detected from a single source IP, indicating potential reconnaissance or scanning activity.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, SourceIP, DenyCount, DistinctPorts, DistinctTargets, TargetPorts, TargetIPs, AlertTitle, AlertDescription, AlertSeverity
 | order by DenyCount desc
 ```
 
@@ -84,8 +88,16 @@ query: |
     by SourceIP, bin(TimeGenerated, 5m)
   // Threshold filter: only alert when deny count exceeds the baseline
   | where DenyCount > threshold
-  | project TimeGenerated, SourceIP, DenyCount, DistinctPorts, DistinctTargets, TargetPorts, TargetIPs
+  | extend
+      AlertTitle = "Denied Traffic Spike — Possible Reconnaissance",
+      AlertDescription = "Spike in denied traffic detected from a single source IP, indicating potential reconnaissance or scanning activity.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, SourceIP, DenyCount, DistinctPorts, DistinctTargets, TargetPorts, TargetIPs, AlertTitle, AlertDescription, AlertSeverity
   | order by DenyCount desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -95,6 +107,9 @@ customDetails:
   DenyCount: DenyCount
   DistinctPorts: DistinctPorts
   DistinctTargets: DistinctTargets
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

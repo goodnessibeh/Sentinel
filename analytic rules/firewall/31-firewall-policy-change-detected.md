@@ -32,7 +32,11 @@ CommonSecurityLog
 | where Message has_any ("policy", "firewall policy", "security policy",
     "address", "address-group", "service", "service-group",
     "schedule", "vip", "ip-pool", "central-nat")
-| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+| extend
+    AlertTitle = "Firewall Policy Change Detected",
+    AlertDescription = "Modification to firewall policies detected, which can silently open network access paths for attackers or create persistent backdoor rules.",
+    AlertSeverity = "High"
+| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -74,8 +78,16 @@ query: |
   | where Message has_any ("policy", "firewall policy", "security policy",
       "address", "address-group", "service", "service-group",
       "schedule", "vip", "ip-pool", "central-nat")
-  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | extend
+      AlertTitle = "Firewall Policy Change Detected",
+      AlertDescription = "Modification to firewall policies detected, which can silently open network access paths for attackers or create persistent backdoor rules.",
+      AlertSeverity = "High"
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -92,6 +104,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -32,7 +32,11 @@ CommonSecurityLog
     "virtual-ip", "vip", "ip-pool",
     "nat-policy", "nat46", "nat64"
   )
-| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+| extend
+    AlertTitle = "NAT Policy Change Detected",
+    AlertDescription = "NAT configuration change detected, which can silently expose internal services to the internet or redirect traffic to attacker-controlled infrastructure.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -74,8 +78,16 @@ query: |
       "virtual-ip", "vip", "ip-pool",
       "nat-policy", "nat46", "nat64"
     )
-  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message
+  | extend
+      AlertTitle = "NAT Policy Change Detected",
+      AlertDescription = "NAT configuration change detected, which can silently expose internal services to the internet or redirect traffic to attacker-controlled infrastructure.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, DeviceName, DestinationUserName, SourceIP, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -92,6 +104,9 @@ entityMappings:
 customDetails:
   DeviceName: DeviceName
   DeviceAction: DeviceAction
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

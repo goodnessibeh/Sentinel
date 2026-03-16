@@ -35,7 +35,11 @@ Syslog
     "stack", "slot", "power", "insufficient", "crash")
 // Parse severity and component from the EMS message
 | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-| project TimeGenerated, HostName, Severity, Component, SyslogMessage
+| extend
+    AlertTitle = "Stack/Chassis Failover Event",
+    AlertDescription = "A failover event detected in a stacked or chassis-based switch deployment, indicating primary unit failure or deliberate sabotage.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -82,9 +86,17 @@ query: |
       "stack", "slot", "power", "insufficient", "crash")
   // Parse severity and component from the EMS message
   | parse SyslogMessage with * "<" Severity ":" Component ">" Rest
-  | project TimeGenerated, HostName, Severity, Component, SyslogMessage
+  | extend
+      AlertTitle = "Stack/Chassis Failover Event",
+      AlertDescription = "A failover event detected in a stacked or chassis-based switch deployment, indicating primary unit failure or deliberate sabotage.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Severity, Component, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -93,6 +105,9 @@ entityMappings:
 customDetails:
   Component: Component
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

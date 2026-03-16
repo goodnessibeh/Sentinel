@@ -1476,7 +1476,7 @@ DeviceProcessEvents
 // Key filter: detect stop or force-kill commands
 | where ProcessCommandLine has "stop" or ProcessCommandLine has "/f"
 // Extract the service name from the command line
-| extend StoppedService = extract(@"(?:stop|/f)\s+[\"']?(\S+)", 1, ProcessCommandLine)
+| extend StoppedService = extract("(?:stop|/f)\\s+[\"']?(\\S+)", 1, ProcessCommandLine)
 // Only alert on critical services, not routine service management
 | where StoppedService in~ (CriticalServices)
 | project TimeGenerated, DeviceName, AccountName, FileName,

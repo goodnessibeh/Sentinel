@@ -33,8 +33,12 @@ AuditLogs
 | extend PropertyName = tostring(ModifiedProp.displayName)
 | extend OldValue = tostring(ModifiedProp.oldValue)
 | extend NewValue = tostring(ModifiedProp.newValue)
+| extend
+    AlertTitle = "Conditional Access Policy Modification",
+    AlertDescription = "This detection monitors for modifications, deletions, or disabling of Conditional Access policies in Entra ID.",
+    AlertSeverity = "High"
 | project TimeGenerated, Initiator, OperationName, PolicyName,
-          PropertyName, OldValue, NewValue
+          PropertyName, OldValue, NewValue, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -78,13 +82,25 @@ query: |
   | extend PropertyName = tostring(ModifiedProp.displayName)
   | extend OldValue = tostring(ModifiedProp.oldValue)
   | extend NewValue = tostring(ModifiedProp.newValue)
+  | extend
+      AlertTitle = "Conditional Access Policy Modification",
+      AlertDescription = "This detection monitors for modifications, deletions, or disabling of Conditional Access policies in Entra ID.",
+      AlertSeverity = "High"
   | project TimeGenerated, Initiator, OperationName, PolicyName,
-            PropertyName, OldValue, NewValue
+            PropertyName, OldValue, NewValue, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: Initiator
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

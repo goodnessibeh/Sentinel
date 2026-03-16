@@ -34,6 +34,10 @@ Syslog
     Components = make_set(Component, 10),
     SampleMessages = make_set(SyslogMessage, 5)
   by HostName, Severity, bin(TimeGenerated, 1h)
+| extend
+    AlertTitle = "Critical/Error System Events",
+    AlertDescription = "Critical or Error severity system events detected from the switch, indicating potential hardware failures or conditions threatening switch stability.",
+    AlertSeverity = "High"
 | order by EventCount desc
 ```
 
@@ -79,8 +83,16 @@ query: |
       Components = make_set(Component, 10),
       SampleMessages = make_set(SyslogMessage, 5)
     by HostName, Severity, bin(TimeGenerated, 1h)
+  | extend
+      AlertTitle = "Critical/Error System Events",
+      AlertDescription = "Critical or Error severity system events detected from the switch, indicating potential hardware failures or conditions threatening switch stability.",
+      AlertSeverity = "High"
   | order by EventCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -89,6 +101,9 @@ entityMappings:
 customDetails:
   EventCount: EventCount
   Severity: Severity
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -29,7 +29,11 @@ OfficeActivity
 | extend DeleteMessage = tostring(parse_json(Parameters)[5].Value)
 // Key filter: only flag rules that forward, delete, or move to suspicious folders
 | where isnotempty(ForwardTo) or isnotempty(DeleteMessage) or MoveToFolder has_any ("RSS", "Deleted", "Junk")
-| project TimeGenerated, UserId, ClientIP, Operation, RuleName, ForwardTo, DeleteMessage, MoveToFolder
+| extend
+    AlertTitle = "Inbox Rule Creation (Email Persistence)",
+    AlertDescription = "This detection identifies the creation or modification of Outlook inbox rules that forward, redirect, or delete emails.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, UserId, ClientIP, Operation, RuleName, ForwardTo, DeleteMessage, MoveToFolder, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -69,12 +73,24 @@ query: |
   | extend DeleteMessage = tostring(parse_json(Parameters)[5].Value)
   // Key filter: only flag rules that forward, delete, or move to suspicious folders
   | where isnotempty(ForwardTo) or isnotempty(DeleteMessage) or MoveToFolder has_any ("RSS", "Deleted", "Junk")
-  | project TimeGenerated, UserId, ClientIP, Operation, RuleName, ForwardTo, DeleteMessage, MoveToFolder
+  | extend
+      AlertTitle = "Inbox Rule Creation (Email Persistence)",
+      AlertDescription = "This detection identifies the creation or modification of Outlook inbox rules that forward, redirect, or delete emails.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, UserId, ClientIP, Operation, RuleName, ForwardTo, DeleteMessage, MoveToFolder, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
         columnName: UserId
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

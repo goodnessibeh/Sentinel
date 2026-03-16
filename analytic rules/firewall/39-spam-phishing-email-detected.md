@@ -26,9 +26,13 @@ CommonSecurityLog
 | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
 // Filter for email filter log entries
 | where Activity has "emailfilter"
+| extend
+    AlertTitle = "Spam/Phishing Email Detected",
+    AlertDescription = "Spam or phishing email identified by FortiGate email filter engine, revealing active phishing campaigns targeting the organization.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, SourceIP, DestinationIP,
           DeviceAction, Message, ApplicationProtocol,
-          DestinationUserName
+          DestinationUserName, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -64,10 +68,18 @@ query: |
   | where DeviceVendor == "Fortinet" and DeviceProduct == "Fortigate"
   // Filter for email filter log entries
   | where Activity has "emailfilter"
+  | extend
+      AlertTitle = "Spam/Phishing Email Detected",
+      AlertDescription = "Spam or phishing email identified by FortiGate email filter engine, revealing active phishing campaigns targeting the organization.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, SourceIP, DestinationIP,
             DeviceAction, Message, ApplicationProtocol,
-            DestinationUserName
+            DestinationUserName, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -84,6 +96,9 @@ entityMappings:
 customDetails:
   DeviceAction: DeviceAction
   ApplicationProtocol: ApplicationProtocol
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

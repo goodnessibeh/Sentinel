@@ -40,7 +40,11 @@ Syslog
     SyslogMessage has "configure", "MODIFIED",
     "CHANGED"
   )
-| project TimeGenerated, HostName, Action, SyslogMessage
+| extend
+    AlertTitle = "Port Mirroring Configuration Change",
+    AlertDescription = "Port mirroring was configured, enabled, or disabled on the switch, which may indicate unauthorized traffic interception.",
+    AlertSeverity = "High"
+| project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -92,9 +96,17 @@ query: |
       SyslogMessage has "configure", "MODIFIED",
       "CHANGED"
     )
-  | project TimeGenerated, HostName, Action, SyslogMessage
+  | extend
+      AlertTitle = "Port Mirroring Configuration Change",
+      AlertDescription = "Port mirroring was configured, enabled, or disabled on the switch, which may indicate unauthorized traffic interception.",
+      AlertSeverity = "High"
+  | project TimeGenerated, HostName, Action, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -102,6 +114,9 @@ entityMappings:
         columnName: HostName
 customDetails:
   Action: Action
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

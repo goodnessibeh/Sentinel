@@ -25,8 +25,12 @@ DeviceProcessEvents
 | where InitiatingProcessFileName =~ "wmiprvse.exe"
 // Exclude normal WMI child processes to reduce noise
 | where FileName !in~ ("wmiprvse.exe", "wmiapsrv.exe", "scrcons.exe")
+| extend
+    AlertTitle = "WMI Remote Execution",
+    AlertDescription = "This detection identifies processes spawned by the WMI Provider Host (wmiprvse.exe), which indicates remote code execution via Windows Management Instrumentation.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, DeviceName, AccountName, FileName,
-          ProcessCommandLine, InitiatingProcessCommandLine
+          ProcessCommandLine, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
 // Aggregate to show the volume and variety of WMI-spawned processes
 | summarize
     ProcessCount = count(),
@@ -66,13 +70,21 @@ query: |
   | where InitiatingProcessFileName =~ "wmiprvse.exe"
   // Exclude normal WMI child processes to reduce noise
   | where FileName !in~ ("wmiprvse.exe", "wmiapsrv.exe", "scrcons.exe")
+  | extend
+      AlertTitle = "WMI Remote Execution",
+      AlertDescription = "This detection identifies processes spawned by the WMI Provider Host (wmiprvse.exe), which indicates remote code execution via Windows Management Instrumentation.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, DeviceName, AccountName, FileName,
-            ProcessCommandLine, InitiatingProcessCommandLine
+            ProcessCommandLine, InitiatingProcessCommandLine, AlertTitle, AlertDescription, AlertSeverity
   // Aggregate to show the volume and variety of WMI-spawned processes
   | summarize
       ProcessCount = count(),
       ProcessList = make_set(strcat(FileName, " → ", ProcessCommandLine), 10)
     by DeviceName, AccountName, bin(TimeGenerated, 1h)
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -82,6 +94,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: AccountName
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

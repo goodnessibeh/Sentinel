@@ -35,6 +35,10 @@ Syslog
     ViolationCount = count(),
     MACList = make_set(MACAddress, 20)
   by HostName, Port, bin(TimeGenerated, 1h)
+| extend
+    AlertTitle = "MAC Learning Limit Exceeded",
+    AlertDescription = "A switch port exceeded its configured MAC address learning limit, potentially indicating a MAC flooding attack.",
+    AlertSeverity = "Medium"
 | order by ViolationCount desc
 ```
 
@@ -81,8 +85,16 @@ query: |
       ViolationCount = count(),
       MACList = make_set(MACAddress, 20)
     by HostName, Port, bin(TimeGenerated, 1h)
+  | extend
+      AlertTitle = "MAC Learning Limit Exceeded",
+      AlertDescription = "A switch port exceeded its configured MAC address learning limit, potentially indicating a MAC flooding attack.",
+      AlertSeverity = "Medium"
   | order by ViolationCount desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -91,6 +103,9 @@ entityMappings:
 customDetails:
   Port: Port
   ViolationCount: ViolationCount
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

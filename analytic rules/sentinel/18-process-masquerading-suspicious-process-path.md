@@ -39,8 +39,12 @@ DeviceProcessEvents
 | join kind=inner (SystemProcesses) on $left.FileName == $right.ProcessName
 // Key filter: flag processes NOT running from their legitimate paths
 | where not(FolderPath has_any (LegitPaths))
+| extend
+    AlertTitle = "Process Masquerading — Suspicious Process Path",
+    AlertDescription = "This detection identifies critical Windows system processes running from unexpected file paths.",
+    AlertSeverity = "Medium"
 | project TimeGenerated, DeviceName, AccountName, FileName, FolderPath,
-          ProcessCommandLine, InitiatingProcessFileName
+          ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -89,8 +93,16 @@ query: |
   | join kind=inner (SystemProcesses) on $left.FileName == $right.ProcessName
   // Key filter: flag processes NOT running from their legitimate paths
   | where not(FolderPath has_any (LegitPaths))
+  | extend
+      AlertTitle = "Process Masquerading — Suspicious Process Path",
+      AlertDescription = "This detection identifies critical Windows system processes running from unexpected file paths.",
+      AlertSeverity = "Medium"
   | project TimeGenerated, DeviceName, AccountName, FileName, FolderPath,
-            ProcessCommandLine, InitiatingProcessFileName
+            ProcessCommandLine, InitiatingProcessFileName, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -100,6 +112,10 @@ entityMappings:
     fieldMappings:
       - identifier: CommandLine
         columnName: ProcessCommandLine
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

@@ -29,7 +29,11 @@ Syslog
 // Extract the affected port and its flap status
 | extend Port = extract(@"Port\s+(\S+)", 1, SyslogMessage)
 | extend FlapStatus = extract(@"status is (\w+)", 1, SyslogMessage)
-| project TimeGenerated, HostName, Port, FlapStatus, SyslogMessage
+| extend
+    AlertTitle = "Port Link Flap Detection",
+    AlertDescription = "The switch link flap detection mechanism triggered, indicating a port is rapidly transitioning between up and down states.",
+    AlertSeverity = "Medium"
+| project TimeGenerated, HostName, Port, FlapStatus, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -70,9 +74,17 @@ query: |
   // Extract the affected port and its flap status
   | extend Port = extract(@"Port\s+(\S+)", 1, SyslogMessage)
   | extend FlapStatus = extract(@"status is (\w+)", 1, SyslogMessage)
-  | project TimeGenerated, HostName, Port, FlapStatus, SyslogMessage
+  | extend
+      AlertTitle = "Port Link Flap Detection",
+      AlertDescription = "The switch link flap detection mechanism triggered, indicating a port is rapidly transitioning between up and down states.",
+      AlertSeverity = "Medium"
+  | project TimeGenerated, HostName, Port, FlapStatus, SyslogMessage, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
 
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Host
     fieldMappings:
@@ -81,6 +93,9 @@ entityMappings:
 customDetails:
   Port: Port
   FlapStatus: FlapStatus
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

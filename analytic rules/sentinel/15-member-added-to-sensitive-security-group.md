@@ -29,8 +29,12 @@ SecurityEvent
     "Administrators", "Account Operators", "Backup Operators",
     "Server Operators", "DnsAdmins", "Exchange Organization Management"
   )
+| extend
+    AlertTitle = "Member Added to Sensitive Security Group",
+    AlertDescription = "This detection monitors for users being added to sensitive on-premises Active Directory security groups such as Domain Admins, Enterprise Admins, and Schema Admins.",
+    AlertSeverity = "High"
 | project TimeGenerated, Computer, SubjectAccount, MemberName, MemberSid,
-          TargetUserName, Activity
+          TargetUserName, Activity, AlertTitle, AlertDescription, AlertSeverity
 ```
 
 ---
@@ -69,8 +73,16 @@ query: |
       "Administrators", "Account Operators", "Backup Operators",
       "Server Operators", "DnsAdmins", "Exchange Organization Management"
     )
+  | extend
+      AlertTitle = "Member Added to Sensitive Security Group",
+      AlertDescription = "This detection monitors for users being added to sensitive on-premises Active Directory security groups such as Domain Admins, Enterprise Admins, and Schema Admins.",
+      AlertSeverity = "High"
   | project TimeGenerated, Computer, SubjectAccount, MemberName, MemberSid,
-            TargetUserName, Activity
+            TargetUserName, Activity, AlertTitle, AlertDescription, AlertSeverity
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -80,6 +92,10 @@ entityMappings:
     fieldMappings:
       - identifier: FullName
         columnName: Computer
+customDetails:
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```

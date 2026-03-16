@@ -35,9 +35,13 @@ CommonSecurityLog
 | extend CatDesc = coalesce(RequestContext, extract("FTNTFGTcatdesc=([^;]+)", 1, AdditionalExtensions))
 // Only surface requests to categories associated with threats
 | where Category in (MaliciousCategories)
+| extend
+    AlertTitle = "Access to Malicious/Phishing Websites",
+    AlertDescription = "Web request detected to a URL categorized as malicious, phishing, spyware, spam, or command-and-control by FortiGuard.",
+    AlertSeverity = "High"
 | project TimeGenerated, SourceIP, DestinationHostName, RequestURL,
           Category, CatDesc, DeviceAction, DestinationUserName,
-          DestinationIP, Message
+          DestinationIP, Message, AlertTitle, AlertDescription, AlertSeverity
 | order by TimeGenerated desc
 ```
 
@@ -80,10 +84,18 @@ query: |
   | extend CatDesc = coalesce(RequestContext, extract("FTNTFGTcatdesc=([^;]+)", 1, AdditionalExtensions))
   // Only surface requests to categories associated with threats
   | where Category in (MaliciousCategories)
+  | extend
+      AlertTitle = "Access to Malicious/Phishing Websites",
+      AlertDescription = "Web request detected to a URL categorized as malicious, phishing, spyware, spam, or command-and-control by FortiGuard.",
+      AlertSeverity = "High"
   | project TimeGenerated, SourceIP, DestinationHostName, RequestURL,
             Category, CatDesc, DeviceAction, DestinationUserName,
-            DestinationIP, Message
+            DestinationIP, Message, AlertTitle, AlertDescription, AlertSeverity
   | order by TimeGenerated desc
+alertDetailsOverride:
+  alertDisplayNameFormat: "{{AlertTitle}}"
+  alertDescriptionFormat: "{{AlertDescription}}"
+  alertSeverityColumnName: AlertSeverity
 entityMappings:
   - entityType: IP
     fieldMappings:
@@ -109,6 +121,9 @@ customDetails:
   DeviceAction: DeviceAction
   CatDesc: CatDesc
   Category: Category
+  AlertTitle: AlertTitle
+  AlertDescription: AlertDescription
+  AlertSeverity: AlertSeverity
 version: 1.0.0
 kind: Scheduled
 ```
